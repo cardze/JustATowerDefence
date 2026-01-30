@@ -9,23 +9,38 @@ from config import *
 class Enemy:
     """Represents an enemy that moves along the path"""
     
-    def __init__(self, path, wave_number=1):
+    def __init__(self, path, wave_number=1, enemy_type='basic'):
         """
         Initialize an enemy
         
         Args:
             path: List of (x, y) tuples representing the path
             wave_number: Current wave number (affects health)
+            enemy_type: Type of enemy ('basic', 'fast', 'tank', 'boss')
         """
         self.path = path
         self.path_index = 0
         self.x, self.y = path[0]
-        self.speed = ENEMY_SPEED
-        self.max_health = ENEMY_HEALTH + (wave_number - 1) * 20
+        self.enemy_type = enemy_type
+        
+        # Get enemy type configuration
+        enemy_config = ENEMY_TYPES.get(enemy_type, ENEMY_TYPES['basic'])
+        self.name = enemy_config['name']
+        self.base_speed = enemy_config['speed']
+        self.speed = self.base_speed
+        base_health = enemy_config['health']
+        self.reward = enemy_config['reward'] + (wave_number - 1) * 2
+        self.color = enemy_config['color']
+        self.radius = enemy_config['radius']
+        
+        # Scale health with wave number
+        self.max_health = base_health + (wave_number - 1) * 20
         self.health = self.max_health
-        self.reward = ENEMY_REWARD + (wave_number - 1) * 2
-        self.radius = 10
         self.reached_end = False
+        
+    def update_speed(self, speed_multiplier):
+        """Update enemy speed based on game speed multiplier"""
+        self.speed = self.base_speed * speed_multiplier
         
     def move(self):
         """Move the enemy along the path"""
@@ -66,11 +81,14 @@ class Enemy:
         Args:
             screen: Pygame surface to draw on
         """
-        # Draw enemy circle
-        pygame.draw.circle(screen, RED, (int(self.x), int(self.y)), self.radius)
+        # Draw enemy circle with type-specific color
+        pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
+        
+        # Draw a border for better visibility
+        pygame.draw.circle(screen, BLACK, (int(self.x), int(self.y)), self.radius, 2)
         
         # Draw health bar
-        health_bar_width = 20
+        health_bar_width = self.radius * 2
         health_bar_height = 3
         health_percentage = self.health / self.max_health
         

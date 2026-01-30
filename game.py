@@ -3,6 +3,7 @@ Main Game class for Tower Defence
 """
 import pygame
 import logging
+import random
 from config import *
 from enemy import Enemy
 from tower import Tower
@@ -27,6 +28,13 @@ class Game:
         self.spawn_timer = 0
         self.wave_complete_time = None
         self.selected_tower = None
+        
+        # Game speed tracking (Comment #2746643544)
+        self.speed_multiplier = BASE_GAME_SPEED
+        self.enemies_killed = 0
+        
+        # Tower type selection
+        self.selected_tower_type = 'basic'
         
         # Define the path for enemies
         self.path = [
@@ -57,29 +65,66 @@ class Game:
             logger.info(f"Wave {self.wave_number} started - Enemies to spawn: {self.enemies_to_spawn}")
             
     def spawn_enemy(self):
-        """Spawn a single enemy"""
+        """Spawn a single enemy with varying types"""
         if self.enemies_to_spawn > 0:
-            enemy = Enemy(self.path, self.wave_number)
+            # Determine enemy type based on wave and randomness
+            enemy_type = self._get_enemy_type_for_wave()
+            enemy = Enemy(self.path, self.wave_number, enemy_type)
+            enemy.update_speed(self.speed_multiplier)
             self.enemies.append(enemy)
             self.enemies_to_spawn -= 1
+    
+    def _get_enemy_type_for_wave(self):
+        """Determine which enemy type to spawn based on wave number"""
+        # Boss every 10 waves
+        if self.wave_number % BOSS_WAVE_INTERVAL == 0:
+            return 'boss'
+        
+        # Mix of enemy types based on wave
+        rand = random.random()
+        if self.wave_number < 3:
+            return 'basic'
+        elif self.wave_number < 7:
+            return 'fast' if rand < 0.3 else 'basic'
+        elif self.wave_number < 12:
+            if rand < 0.3:
+                return 'fast'
+            elif rand < 0.6:
+                return 'tank'
+            else:
+                return 'basic'
+        else:
+            if rand < 0.25:
+                return 'fast'
+            elif rand < 0.5:
+                return 'tank'
+            else:
+                return 'basic'
             
-    def add_tower(self, x, y):
+    def add_tower(self, x, y, tower_type=None):
         """
         Add a tower at the specified position
         
         Args:
             x, y: Position to place tower
+            tower_type: Type of tower to build (None uses selected type)
             
         Returns:
             bool: True if tower was placed successfully
         """
-        if self.money >= TOWER_COST:
+        if tower_type is None:
+            tower_type = self.selected_tower_type
+        
+        tower_config = TOWER_TYPES.get(tower_type, TOWER_TYPES['basic'])
+        tower_cost = tower_config['cost']
+        
+        if self.money >= tower_cost:
             # Check if position is valid (not on path, not on another tower)
             if self.is_valid_tower_position(x, y):
-                tower = Tower(x, y)
+                tower = Tower(x, y, tower_type)
                 self.towers.append(tower)
-                self.money -= TOWER_COST
-                logger.info(f"Tower placed at ({x}, {y}) - Money remaining: ${self.money}")
+                self.money -= tower_cost
+                logger.info(f"{tower.name} placed at ({x}, {y}) - Money remaining: ${self.money}")
                 return True
         return False
     
@@ -271,6 +316,15 @@ class Game:
                 self.money += enemy.reward
                 enemies_to_remove.append(enemy)
                 enemies_killed += 1
+                
+                # Increase game speed (Comment #2746643544)
+                self.enemies_killed += 1
+                self.speed_multiplier = min(MAX_SPEED_MULTIPLIER, 
+                                           BASE_GAME_SPEED + (self.enemies_killed * SPEED_INCREASE_PER_KILL))
+                # Update all enemy speeds
+                for e in self.enemies:
+                    if e.health > 0:
+                        e.update_speed(self.speed_multiplier)
         
         for enemy in enemies_to_remove:
             if enemy in self.enemies:
@@ -296,7 +350,7 @@ class Game:
         # Update projectiles
         projectiles_to_remove = []
         for projectile in self.projectiles:
-            if projectile.move():
+            if projectile.move(self.enemies):
                 projectiles_to_remove.append(projectile)
         
         for projectile in projectiles_to_remove:
