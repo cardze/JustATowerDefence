@@ -30,7 +30,9 @@ class Game:
         self.selected_tower = None
         
         # Game speed tracking (Comment #2746643544)
-        self.speed_multiplier = BASE_GAME_SPEED
+        # Speed multiplier affects enemy movement speed, not frame rate
+        # Frame rate is controlled by clock.tick(FPS) in main loop
+        self.speed_multiplier = BASE_GAME_SPEED  # Reset to 1.0x on game init/restart
         self.enemies_killed = 0
         
         # Tower type selection
@@ -48,7 +50,8 @@ class Game:
             (600, 550)
         ]
         
-        logger.info("Game initialized - Money: $%d, Lives: %d", self.money, self.lives)
+        logger.info("Game initialized - Money: $%d, Lives: %d, Speed: %.2fx", 
+                   self.money, self.lives, self.speed_multiplier)
         
     def start_wave(self):
         """Start a new wave of enemies"""
