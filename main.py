@@ -64,6 +64,11 @@ class UI:
         
         wave_text = self.font.render(f"Wave: {game.wave_number}", True, WHITE)
         self.screen.blit(wave_text, (sidebar_x + 10, y_offset))
+        y_offset += 25
+        
+        # Game speed (Comment #2746643544)
+        speed_text = self.font.render(f"Speed: {game.speed_multiplier:.2f}x", True, YELLOW)
+        self.screen.blit(speed_text, (sidebar_x + 10, y_offset))
         y_offset += 50
         
         # Start wave button
@@ -87,21 +92,49 @@ class UI:
         y_offset += BUTTON_HEIGHT + 20
         
         # Tower info
-        tower_info = self.font.render("Build Tower:", True, WHITE)
+        tower_config = TOWER_TYPES.get(game.selected_tower_type, TOWER_TYPES['basic'])
+        tower_info = self.font.render(f"{tower_config['name']}:", True, WHITE)
         self.screen.blit(tower_info, (sidebar_x + 10, y_offset))
         y_offset += 30
         
-        cost_text = self.font.render(f"Cost: ${TOWER_COST}", True, WHITE)
+        cost_text = self.font.render(f"Cost: ${tower_config['cost']}", True, WHITE)
         self.screen.blit(cost_text, (sidebar_x + 10, y_offset))
-        y_offset += 25
+        y_offset += 20
         
-        damage_text = self.font.render(f"Damage: {TOWER_DAMAGE}", True, WHITE)
+        damage_text = self.font.render(f"Dmg: {tower_config['damage']}", True, WHITE)
         self.screen.blit(damage_text, (sidebar_x + 10, y_offset))
+        y_offset += 20
+        
+        range_text = self.font.render(f"Rng: {tower_config['range']}", True, WHITE)
+        self.screen.blit(range_text, (sidebar_x + 10, y_offset))
         y_offset += 25
         
-        range_text = self.font.render(f"Range: {TOWER_RANGE}", True, WHITE)
-        self.screen.blit(range_text, (sidebar_x + 10, y_offset))
-        y_offset += 40
+        # Tower type buttons (small colored squares)
+        small_font = pygame.font.Font(None, 16)
+        button_size = 35
+        button_spacing = 5
+        types = ['basic', 'sniper', 'rapid', 'cannon']
+        type_labels = ['B', 'S', 'R', 'C']
+        
+        for i, (t_type, label) in enumerate(zip(types, type_labels)):
+            btn_x = sidebar_x + 10 + i * (button_size + button_spacing)
+            btn_rect = pygame.Rect(btn_x, y_offset, button_size, button_size)
+            t_config = TOWER_TYPES[t_type]
+            
+            # Highlight selected type
+            if t_type == game.selected_tower_type:
+                pygame.draw.rect(self.screen, YELLOW, btn_rect)
+                pygame.draw.rect(self.screen, t_config['color'], btn_rect.inflate(-4, -4))
+            else:
+                pygame.draw.rect(self.screen, t_config['color'], btn_rect)
+            pygame.draw.rect(self.screen, BLACK, btn_rect, 2)
+            
+            # Draw label
+            label_text = small_font.render(label, True, WHITE)
+            label_rect = label_text.get_rect(center=btn_rect.center)
+            self.screen.blit(label_text, label_rect)
+        
+        y_offset += button_size + 15
         
         # Instructions
         inst_text = self.font.render("Click to build", True, YELLOW)
@@ -218,8 +251,22 @@ def main():
                             # Try to place tower
                             game.add_tower(mouse_x, mouse_y)
                     else:
-                        # Check if clicking start wave button
+                        # Check tower type selection buttons
                         sidebar_x = SCREEN_WIDTH - SIDEBAR_WIDTH
+                        button_size = 35
+                        button_spacing = 5
+                        tower_btn_y = 272  # Approximate position of tower type buttons
+                        types = ['basic', 'sniper', 'rapid', 'cannon']
+                        
+                        for i, t_type in enumerate(types):
+                            btn_x = sidebar_x + 10 + i * (button_size + button_spacing)
+                            btn_rect = pygame.Rect(btn_x, tower_btn_y, button_size, button_size)
+                            if btn_rect.collidepoint(mouse_x, mouse_y):
+                                game.selected_tower_type = t_type
+                                logger.info(f"Selected tower type: {t_type}")
+                                break
+                        
+                        # Check if clicking start wave button
                         button_y = 150
                         button_rect = pygame.Rect(sidebar_x + BUTTON_PADDING, button_y,
                                                   SIDEBAR_WIDTH - 2 * BUTTON_PADDING, BUTTON_HEIGHT)
