@@ -108,8 +108,12 @@ class UI:
         self.screen.blit(inst_text, (sidebar_x + 10, y_offset))
         y_offset += 25
         
-        inst_text2 = self.font.render("Right-click to sell", True, YELLOW)
+        inst_text2 = self.font.render("Right-click tower", True, YELLOW)
         self.screen.blit(inst_text2, (sidebar_x + 10, y_offset))
+        y_offset += 20
+        
+        inst_text3 = self.font.render("  to upgrade/sell", True, YELLOW)
+        self.screen.blit(inst_text3, (sidebar_x + 10, y_offset))
         
         # Selected tower info
         if game.selected_tower:
