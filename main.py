@@ -5,8 +5,20 @@ A simple tower defence game built with Pygame
 """
 import pygame
 import sys
+import logging
 from config import *
 from game import Game
+
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('tower_defence.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 
 class UI:
@@ -104,8 +116,40 @@ class UI:
             y_offset += 50
             selected_text = self.font.render("Selected Tower:", True, WHITE)
             self.screen.blit(selected_text, (sidebar_x + 10, y_offset))
+            y_offset += 25
+            
+            # Tower stats
+            tower = game.selected_tower
+            level_text = self.font.render(f"Level: {tower.level}", True, WHITE)
+            self.screen.blit(level_text, (sidebar_x + 10, y_offset))
+            y_offset += 20
+            
+            dmg_text = self.font.render(f"Damage: {tower.damage}", True, WHITE)
+            self.screen.blit(dmg_text, (sidebar_x + 10, y_offset))
+            y_offset += 20
+            
+            rng_text = self.font.render(f"Range: {tower.range}", True, WHITE)
+            self.screen.blit(rng_text, (sidebar_x + 10, y_offset))
             y_offset += 30
             
+            # Upgrade button
+            if tower.can_upgrade():
+                upgrade_button_rect = pygame.Rect(sidebar_x + BUTTON_PADDING, y_offset,
+                                              SIDEBAR_WIDTH - 2 * BUTTON_PADDING, BUTTON_HEIGHT)
+                upgrade_color = GREEN if game.money >= TOWER_UPGRADE_COST else GRAY
+                pygame.draw.rect(self.screen, upgrade_color, upgrade_button_rect)
+                pygame.draw.rect(self.screen, BLACK, upgrade_button_rect, 2)
+                
+                upgrade_text = self.font.render(f"Upgrade (${TOWER_UPGRADE_COST})", True, BLACK)
+                upgrade_text_rect = upgrade_text.get_rect(center=upgrade_button_rect.center)
+                self.screen.blit(upgrade_text, upgrade_text_rect)
+                y_offset += BUTTON_HEIGHT + 10
+            else:
+                max_text = self.font.render("MAX LEVEL", True, YELLOW)
+                self.screen.blit(max_text, (sidebar_x + 10, y_offset))
+                y_offset += 40
+            
+            # Sell button
             sell_button_rect = pygame.Rect(sidebar_x + BUTTON_PADDING, y_offset,
                                           SIDEBAR_WIDTH - 2 * BUTTON_PADDING, BUTTON_HEIGHT)
             pygame.draw.rect(self.screen, RED, sell_button_rect)
@@ -149,6 +193,7 @@ def main():
     pygame.display.set_caption("Tower Defence")
     clock = pygame.time.Clock()
     
+    logger.info("=== Tower Defence Game Started ===")
     game = Game()
     ui = UI(screen)
     
@@ -178,10 +223,24 @@ def main():
                         if button_rect.collidepoint(mouse_x, mouse_y):
                             game.start_wave()
                         
-                        # Check if clicking sell button
+                        # Check if clicking upgrade or sell button for selected tower
                         if game.selected_tower:
-                            sell_button_y = 450
-                            sell_button_rect = pygame.Rect(sidebar_x + BUTTON_PADDING, sell_button_y,
+                            # Calculate button positions dynamically
+                            base_y = 380
+                            
+                            # Upgrade button (if available)
+                            if game.selected_tower.can_upgrade():
+                                upgrade_button_rect = pygame.Rect(sidebar_x + BUTTON_PADDING, base_y,
+                                                              SIDEBAR_WIDTH - 2 * BUTTON_PADDING, BUTTON_HEIGHT)
+                                if upgrade_button_rect.collidepoint(mouse_x, mouse_y):
+                                    if game.upgrade_tower(game.selected_tower):
+                                        logger.info("Tower upgrade successful")
+                                base_y += BUTTON_HEIGHT + 10
+                            else:
+                                base_y += 40
+                            
+                            # Sell button
+                            sell_button_rect = pygame.Rect(sidebar_x + BUTTON_PADDING, base_y,
                                                           SIDEBAR_WIDTH - 2 * BUTTON_PADDING, BUTTON_HEIGHT)
                             if sell_button_rect.collidepoint(mouse_x, mouse_y):
                                 game.sell_tower(game.selected_tower)
@@ -197,8 +256,10 @@ def main():
             if event.type == pygame.KEYDOWN:
                 if game.game_over:
                     if event.key == pygame.K_r:
+                        logger.info("Game restarted by player")
                         game = Game()
                     elif event.key == pygame.K_q:
+                        logger.info("Game quit by player")
                         running = False
         
         # Update game

@@ -14,6 +14,7 @@ from game import Game
 from enemy import Enemy
 from tower import Tower
 from projectile import Projectile
+from config import *
 
 
 def test_enemy_creation():
@@ -163,6 +164,63 @@ def test_game_update():
     print("✓ Game update test passed")
 
 
+def test_tower_upgrade():
+    """Test tower upgrade functionality"""
+    pygame.init()
+    game = Game()
+    
+    # Add a tower
+    game.add_tower(400, 300)
+    tower = game.towers[0]
+    
+    initial_level = tower.level
+    initial_damage = tower.damage
+    initial_range = tower.range
+    
+    # Upgrade tower
+    success = game.upgrade_tower(tower)
+    
+    assert success, "Tower upgrade should succeed"
+    assert tower.level == initial_level + 1, "Tower level should increase"
+    assert tower.damage > initial_damage, "Tower damage should increase"
+    assert tower.range > initial_range, "Tower range should increase"
+    print("✓ Tower upgrade test passed")
+
+
+def test_tower_max_upgrade():
+    """Test tower cannot exceed max level"""
+    pygame.init()
+    game = Game()
+    
+    # Add a tower and give enough money
+    game.add_tower(400, 300)
+    game.money = 1000
+    tower = game.towers[0]
+    
+    # Upgrade to max level
+    while tower.can_upgrade():
+        game.upgrade_tower(tower)
+    
+    assert tower.level == TOWER_MAX_LEVEL, "Tower should reach max level"
+    assert not tower.can_upgrade(), "Tower should not be upgradeable at max level"
+    print("✓ Tower max upgrade test passed")
+
+
+def test_path_generation():
+    """Test dynamic path generation"""
+    pygame.init()
+    game = Game()
+    
+    initial_path = game.path.copy()
+    
+    # Generate new path
+    game.generate_complex_path()
+    
+    assert game.path != initial_path, "Path should change after generation"
+    assert len(game.path) > 0, "Path should not be empty"
+    print("✓ Path generation test passed")
+
+
 def run_all_tests():
     """Run all tests"""
     print("Running Tower Defence Game Tests...")
@@ -178,7 +236,10 @@ def run_all_tests():
         test_game_initialization,
         test_wave_start,
         test_tower_placement,
-        test_game_update
+        test_game_update,
+        test_tower_upgrade,
+        test_tower_max_upgrade,
+        test_path_generation
     ]
     
     failed = 0

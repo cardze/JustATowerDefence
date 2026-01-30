@@ -39,3 +39,6 @@ Thumbs.db
 # Screenshots and demo files
 *.png
 create_screenshot.py
+
+# Log files
+*.log

@@ -19,6 +19,7 @@ class Tower:
         """
         self.x = x
         self.y = y
+        self.level = 1
         self.range = TOWER_RANGE
         self.damage = TOWER_DAMAGE
         self.fire_rate = TOWER_FIRE_RATE
@@ -26,6 +27,32 @@ class Tower:
         self.width = 30
         self.height = 30
         self.target = None
+        
+    def upgrade(self):
+        """
+        Upgrade the tower to next level
+        
+        Returns:
+            bool: True if upgrade was successful
+        """
+        if self.level >= TOWER_MAX_LEVEL:
+            return False
+            
+        self.level += 1
+        self.damage += TOWER_UPGRADE_DAMAGE_BONUS
+        self.range += TOWER_UPGRADE_RANGE_BONUS
+        self.fire_rate = max(5, self.fire_rate - TOWER_UPGRADE_FIRE_RATE_BONUS)
+        return True
+    
+    def get_upgrade_cost(self):
+        """Get the cost to upgrade this tower"""
+        if self.level >= TOWER_MAX_LEVEL:
+            return None
+        return TOWER_UPGRADE_COST
+    
+    def can_upgrade(self):
+        """Check if tower can be upgraded"""
+        return self.level < TOWER_MAX_LEVEL
         
     def find_target(self, enemies):
         """
@@ -99,14 +126,24 @@ class Tower:
         Args:
             screen: Pygame surface to draw on
         """
-        # Draw tower body
+        # Draw tower body with color based on level
+        tower_colors = [BLUE, (0, 0, 200), (0, 0, 150)]
+        color = tower_colors[min(self.level - 1, len(tower_colors) - 1)]
+        
         tower_rect = pygame.Rect(
             self.x - self.width // 2,
             self.y - self.height // 2,
             self.width,
             self.height
         )
-        pygame.draw.rect(screen, BLUE, tower_rect)
+        pygame.draw.rect(screen, color, tower_rect)
+        
+        # Draw level indicator
+        if self.level > 1:
+            font = pygame.font.Font(None, 20)
+            level_text = font.render(str(self.level), True, YELLOW)
+            text_rect = level_text.get_rect(center=(self.x, self.y))
+            screen.blit(level_text, text_rect)
         
         # Draw range circle (semi-transparent)
         range_surface = pygame.Surface((self.range * 2, self.range * 2), pygame.SRCALPHA)

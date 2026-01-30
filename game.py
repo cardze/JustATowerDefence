@@ -2,9 +2,12 @@
 Main Game class for Tower Defence
 """
 import pygame
+import logging
 from config import *
 from enemy import Enemy
 from tower import Tower
+
+logger = logging.getLogger(__name__)
 
 
 class Game:
@@ -37,6 +40,8 @@ class Game:
             (600, 550)
         ]
         
+        logger.info("Game initialized - Money: $%d, Lives: %d", self.money, self.lives)
+        
     def start_wave(self):
         """Start a new wave of enemies"""
         if not self.wave_in_progress and not self.game_over:
@@ -44,6 +49,12 @@ class Game:
             self.enemies_to_spawn = INITIAL_ENEMIES_PER_WAVE + (self.wave_number - 1) * ENEMIES_INCREMENT
             self.wave_in_progress = True
             self.spawn_timer = 0
+            
+            # Generate more complex path for higher waves
+            if self.wave_number > 1 and self.wave_number % 5 == 0:
+                self.generate_complex_path()
+            
+            logger.info(f"Wave {self.wave_number} started - Enemies to spawn: {self.enemies_to_spawn}")
             
     def spawn_enemy(self):
         """Spawn a single enemy"""
@@ -68,6 +79,7 @@ class Game:
                 tower = Tower(x, y)
                 self.towers.append(tower)
                 self.money -= TOWER_COST
+                logger.info(f"Tower placed at ({x}, {y}) - Money remaining: ${self.money}")
                 return True
         return False
     
@@ -133,6 +145,100 @@ class Game:
             self.towers.remove(tower)
             self.money += TOWER_SELL_VALUE
             self.selected_tower = None
+            logger.info(f"Tower sold at ({tower.x}, {tower.y}) for ${TOWER_SELL_VALUE}")
+    
+    def upgrade_tower(self, tower):
+        """
+        Upgrade a tower
+        
+        Args:
+            tower: Tower object to upgrade
+            
+        Returns:
+            bool: True if upgrade was successful
+        """
+        if tower not in self.towers:
+            return False
+            
+        upgrade_cost = tower.get_upgrade_cost()
+        if upgrade_cost is None or self.money < upgrade_cost:
+            return False
+        
+        if tower.upgrade():
+            self.money -= upgrade_cost
+            logger.info(f"Tower at ({tower.x}, {tower.y}) upgraded to level {tower.level} - Damage: {tower.damage}, Range: {tower.range}, Fire Rate: {tower.fire_rate}")
+            return True
+        
+        return False
+    
+    def generate_complex_path(self):
+        """
+        Generate a more complex path based on current wave number
+        Paths become more intricate as waves progress
+        """
+        import random
+        
+        # Different path patterns based on wave progression
+        wave_mod = (self.wave_number // 5) % 4
+        
+        if wave_mod == 0:
+            # Zigzag path
+            self.path = [
+                (50, 50),
+                (200, 50),
+                (200, 150),
+                (100, 150),
+                (100, 250),
+                (300, 250),
+                (300, 400),
+                (150, 400),
+                (150, 550),
+                (600, 550)
+            ]
+        elif wave_mod == 1:
+            # Spiral path
+            self.path = [
+                (50, 100),
+                (500, 100),
+                (500, 450),
+                (150, 450),
+                (150, 200),
+                (400, 200),
+                (400, 350),
+                (250, 350),
+                (250, 550),
+                (600, 550)
+            ]
+        elif wave_mod == 2:
+            # Snake path
+            self.path = [
+                (50, 50),
+                (550, 50),
+                (550, 150),
+                (100, 150),
+                (100, 300),
+                (550, 300),
+                (550, 450),
+                (100, 450),
+                (100, 550),
+                (600, 550)
+            ]
+        else:
+            # Maze-like path
+            self.path = [
+                (50, 300),
+                (200, 300),
+                (200, 100),
+                (400, 100),
+                (400, 450),
+                (250, 450),
+                (250, 200),
+                (500, 200),
+                (500, 550),
+                (600, 550)
+            ]
+        
+        logger.info(f"Path complexity increased - Pattern {wave_mod + 1} activated for wave {self.wave_number}")
             
     def update(self):
         """Update game state"""
@@ -148,26 +254,38 @@ class Game:
         
         # Update enemies
         enemies_to_remove = []
+        enemies_killed = 0
+        enemies_escaped = 0
+        
         for enemy in self.enemies:
             enemy.move()
             
             if enemy.reached_end:
                 self.lives -= 1
                 enemies_to_remove.append(enemy)
+                enemies_escaped += 1
                 if self.lives <= 0:
                     self.game_over = True
+                    logger.warning(f"Game Over! Wave: {self.wave_number}, Towers: {len(self.towers)}")
             elif enemy.health <= 0:
                 self.money += enemy.reward
                 enemies_to_remove.append(enemy)
+                enemies_killed += 1
         
         for enemy in enemies_to_remove:
             if enemy in self.enemies:
                 self.enemies.remove(enemy)
         
+        if enemies_killed > 0:
+            logger.info(f"Enemies defeated: {enemies_killed} - Money earned: ${enemies_killed * ENEMY_REWARD}")
+        if enemies_escaped > 0:
+            logger.warning(f"Enemies escaped: {enemies_escaped} - Lives remaining: {self.lives}")
+        
         # Check if wave is complete
         if self.wave_in_progress and self.enemies_to_spawn == 0 and len(self.enemies) == 0:
             self.wave_in_progress = False
             self.wave_complete_time = pygame.time.get_ticks()
+            logger.info(f"Wave {self.wave_number} completed! Money: ${self.money}, Lives: {self.lives}, Towers: {len(self.towers)}")
         
         # Update towers
         for tower in self.towers:
