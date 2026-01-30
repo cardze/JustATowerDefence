@@ -17,8 +17,6 @@ BLUE = (0, 0, 255)
 YELLOW = (255, 255, 0)
 GRAY = (128, 128, 128)
 DARK_GREEN = (0, 128, 0)
-ORANGE = (255, 165, 0)
-PURPLE = (128, 0, 128)
 
 # Game settings
 INITIAL_MONEY = 200
@@ -37,7 +35,6 @@ ENEMY_HEALTH = 100
 ENEMY_REWARD = 10
 
 # Wave settings
-WAVE_DELAY = 3000  # milliseconds between waves
 INITIAL_ENEMIES_PER_WAVE = 5
 ENEMIES_INCREMENT = 3  # additional enemies per wave
 

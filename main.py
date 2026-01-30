@@ -207,7 +207,7 @@ def main():
         # Draw everything
         screen.fill(WHITE)
         game.draw(screen)
-        wave_button_rect = ui.draw_sidebar(game)
+        ui.draw_sidebar(game)
         
         if game.game_over:
             ui.draw_game_over(game)
