@@ -35,6 +35,12 @@ class UI:
         self.font = pygame.font.Font(None, 24)
         self.title_font = pygame.font.Font(None, 36)
         
+        # Button positions (initialized to avoid AttributeError)
+        self.wave_button_y = 0
+        self.tower_buttons_y = 0
+        self.upgrade_button_y = None
+        self.sell_button_y = None
+        
     def draw_sidebar(self, game):
         """
         Draw the sidebar with game info and controls
@@ -72,6 +78,7 @@ class UI:
         y_offset += 50
         
         # Start wave button
+        self.wave_button_y = y_offset  # Store for click detection
         button_rect = pygame.Rect(sidebar_x + BUTTON_PADDING, y_offset, 
                                   SIDEBAR_WIDTH - 2 * BUTTON_PADDING, BUTTON_HEIGHT)
         
@@ -110,6 +117,7 @@ class UI:
         y_offset += 25
         
         # Tower type buttons (small colored squares)
+        self.tower_buttons_y = y_offset  # Store for click detection
         small_font = pygame.font.Font(None, 16)
         button_size = 35
         button_spacing = 5
@@ -171,6 +179,7 @@ class UI:
             
             # Upgrade button
             if tower.can_upgrade():
+                self.upgrade_button_y = y_offset  # Store for click detection
                 upgrade_button_rect = pygame.Rect(sidebar_x + BUTTON_PADDING, y_offset,
                                               SIDEBAR_WIDTH - 2 * BUTTON_PADDING, BUTTON_HEIGHT)
                 upgrade_color = GREEN if game.money >= TOWER_UPGRADE_COST else GRAY
@@ -182,11 +191,13 @@ class UI:
                 self.screen.blit(upgrade_text, upgrade_text_rect)
                 y_offset += BUTTON_HEIGHT + 10
             else:
+                self.upgrade_button_y = None  # No upgrade button
                 max_text = self.font.render("MAX LEVEL", True, YELLOW)
                 self.screen.blit(max_text, (sidebar_x + 10, y_offset))
                 y_offset += 40
             
             # Sell button
+            self.sell_button_y = y_offset  # Store for click detection
             sell_button_rect = pygame.Rect(sidebar_x + BUTTON_PADDING, y_offset,
                                           SIDEBAR_WIDTH - 2 * BUTTON_PADDING, BUTTON_HEIGHT)
             pygame.draw.rect(self.screen, RED, sell_button_rect)
@@ -195,6 +206,9 @@ class UI:
             sell_text = self.font.render(f"Sell (${TOWER_SELL_VALUE})", True, WHITE)
             sell_text_rect = sell_text.get_rect(center=sell_button_rect.center)
             self.screen.blit(sell_text, sell_text_rect)
+        else:
+            self.upgrade_button_y = None
+            self.sell_button_y = None
         
         return button_rect
     
@@ -251,24 +265,22 @@ def main():
                             # Try to place tower
                             game.add_tower(mouse_x, mouse_y)
                     else:
-                        # Check tower type selection buttons
+                        # Check tower type selection buttons (using stored position)
                         sidebar_x = SCREEN_WIDTH - SIDEBAR_WIDTH
                         button_size = 35
                         button_spacing = 5
-                        tower_btn_y = 272  # Approximate position of tower type buttons
                         types = ['basic', 'sniper', 'rapid', 'cannon']
                         
                         for i, t_type in enumerate(types):
                             btn_x = sidebar_x + 10 + i * (button_size + button_spacing)
-                            btn_rect = pygame.Rect(btn_x, tower_btn_y, button_size, button_size)
+                            btn_rect = pygame.Rect(btn_x, ui.tower_buttons_y, button_size, button_size)
                             if btn_rect.collidepoint(mouse_x, mouse_y):
                                 game.selected_tower_type = t_type
                                 logger.info(f"Selected tower type: {t_type}")
                                 break
                         
-                        # Check if clicking start wave button
-                        button_y = 150
-                        button_rect = pygame.Rect(sidebar_x + BUTTON_PADDING, button_y,
+                        # Check if clicking start wave button (using stored position)
+                        button_rect = pygame.Rect(sidebar_x + BUTTON_PADDING, ui.wave_button_y,
                                                   SIDEBAR_WIDTH - 2 * BUTTON_PADDING, BUTTON_HEIGHT)
                         
                         if button_rect.collidepoint(mouse_x, mouse_y):
@@ -276,25 +288,20 @@ def main():
                         
                         # Check if clicking upgrade or sell button for selected tower
                         if game.selected_tower:
-                            # Calculate button positions dynamically
-                            base_y = 380
-                            
                             # Upgrade button (if available)
-                            if game.selected_tower.can_upgrade():
-                                upgrade_button_rect = pygame.Rect(sidebar_x + BUTTON_PADDING, base_y,
+                            if ui.upgrade_button_y is not None:
+                                upgrade_button_rect = pygame.Rect(sidebar_x + BUTTON_PADDING, ui.upgrade_button_y,
                                                               SIDEBAR_WIDTH - 2 * BUTTON_PADDING, BUTTON_HEIGHT)
                                 if upgrade_button_rect.collidepoint(mouse_x, mouse_y):
                                     if game.upgrade_tower(game.selected_tower):
                                         logger.info("Tower upgrade successful")
-                                base_y += BUTTON_HEIGHT + 10
-                            else:
-                                base_y += 40
                             
                             # Sell button
-                            sell_button_rect = pygame.Rect(sidebar_x + BUTTON_PADDING, base_y,
-                                                          SIDEBAR_WIDTH - 2 * BUTTON_PADDING, BUTTON_HEIGHT)
-                            if sell_button_rect.collidepoint(mouse_x, mouse_y):
-                                game.sell_tower(game.selected_tower)
+                            if ui.sell_button_y is not None:
+                                sell_button_rect = pygame.Rect(sidebar_x + BUTTON_PADDING, ui.sell_button_y,
+                                                              SIDEBAR_WIDTH - 2 * BUTTON_PADDING, BUTTON_HEIGHT)
+                                if sell_button_rect.collidepoint(mouse_x, mouse_y):
+                                    game.sell_tower(game.selected_tower)
                 
                 elif event.button == 3:  # Right click
                     if mouse_x < SCREEN_WIDTH - SIDEBAR_WIDTH:
