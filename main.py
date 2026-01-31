@@ -325,7 +325,9 @@ def main():
             ui.draw_game_over(game)
         
         pygame.display.flip()
-        clock.tick(FPS)
+        # Use dynamic FPS based on speed multiplier (Comment #2746726455)
+        current_fps = game.get_current_fps()
+        clock.tick(current_fps)
     
     pygame.quit()
     sys.exit()

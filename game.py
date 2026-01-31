@@ -29,9 +29,9 @@ class Game:
         self.wave_complete_time = None
         self.selected_tower = None
         
-        # Game speed tracking (Comment #2746643544)
-        # Speed multiplier affects enemy movement speed, not frame rate
-        # Frame rate is controlled by clock.tick(FPS) in main loop
+        # Game speed tracking (Comment #2746643544, #2746726455)
+        # Speed multiplier affects the ENTIRE GAME SPEED (FPS), not just enemy movement
+        # Base FPS is 60, multiplier increases game speed up to 3x (180 FPS)
         self.speed_multiplier = BASE_GAME_SPEED  # Reset to 1.0x on game init/restart
         self.enemies_killed = 0
         
@@ -73,7 +73,7 @@ class Game:
             # Determine enemy type based on wave and randomness
             enemy_type = self._get_enemy_type_for_wave()
             enemy = Enemy(self.path, self.wave_number, enemy_type)
-            enemy.update_speed(self.speed_multiplier)
+            # No need to update enemy speed - entire game speed is controlled by FPS
             self.enemies.append(enemy)
             self.enemies_to_spawn -= 1
     
@@ -320,14 +320,14 @@ class Game:
                 enemies_to_remove.append(enemy)
                 enemies_killed += 1
                 
-                # Increase game speed (Comment #2746643544)
+                # Increase game speed (Comment #2746643544, #2746726455)
+                # This increases entire game FPS, not just enemy speed
                 self.enemies_killed += 1
                 self.speed_multiplier = min(MAX_SPEED_MULTIPLIER, 
                                            BASE_GAME_SPEED + (self.enemies_killed * SPEED_INCREASE_PER_KILL))
-                # Update all enemy speeds
-                for e in self.enemies:
-                    if e.health > 0:
-                        e.update_speed(self.speed_multiplier)
+                # Log speed change
+                if self.enemies_killed % 10 == 0:  # Log every 10 kills
+                    logger.info(f"Game speed increased to {self.speed_multiplier:.2f}x (FPS: {int(FPS * self.speed_multiplier)})")
         
         for enemy in enemies_to_remove:
             if enemy in self.enemies:
@@ -406,3 +406,12 @@ class Game:
             if tower.is_clicked(x, y):
                 return tower
         return None
+    
+    def get_current_fps(self):
+        """
+        Get the current FPS based on speed multiplier
+        
+        Returns:
+            int: Current target FPS
+        """
+        return int(FPS * self.speed_multiplier)
