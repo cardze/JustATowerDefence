@@ -1,13 +1,20 @@
 """
 Enemy class for Tower Defence game
+
+Implements Observer Pattern for event notifications
 """
 import pygame
 import math
 from config import *
+from event_system import EventManager, GameEvent
 
 
 class Enemy:
-    """Represents an enemy that moves along the path"""
+    """
+    Represents an enemy that moves along the path
+    
+    Uses Observer Pattern to emit events when important actions occur
+    """
     
     def __init__(self, path, wave_number=1, enemy_type='basic'):
         """
@@ -38,14 +45,24 @@ class Enemy:
         self.health = self.max_health
         self.reached_end = False
         
-    def update_speed(self, speed_multiplier):
-        """Update enemy speed based on game speed multiplier"""
-        self.speed = self.base_speed * speed_multiplier
+        # Event system
+        self.event_manager = EventManager()
+        self.event_manager.emit(GameEvent.ENEMY_SPAWNED, {
+            'enemy': self,
+            'type': enemy_type,
+            'health': self.max_health,
+            'position': (self.x, self.y)
+        })
         
     def move(self):
         """Move the enemy along the path"""
         if self.path_index >= len(self.path) - 1:
             self.reached_end = True
+            # Emit event when enemy reaches the end
+            self.event_manager.emit(GameEvent.ENEMY_ESCAPED, {
+                'enemy': self,
+                'type': self.enemy_type
+            })
             return
             
         target_x, target_y = self.path[self.path_index + 1]
@@ -57,6 +74,11 @@ class Enemy:
             self.path_index += 1
             if self.path_index >= len(self.path) - 1:
                 self.reached_end = True
+                # Emit event when enemy reaches the end
+                self.event_manager.emit(GameEvent.ENEMY_ESCAPED, {
+                    'enemy': self,
+                    'type': self.enemy_type
+                })
         else:
             self.x += (dx / distance) * self.speed
             self.y += (dy / distance) * self.speed
@@ -72,7 +94,17 @@ class Enemy:
             bool: True if enemy is killed
         """
         self.health -= damage
-        return self.health <= 0
+        
+        if self.health <= 0:
+            # Emit event when enemy is killed
+            self.event_manager.emit(GameEvent.ENEMY_KILLED, {
+                'enemy': self,
+                'type': self.enemy_type,
+                'reward': self.reward
+            })
+            return True
+        
+        return False
     
     def draw(self, screen):
         """

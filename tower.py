@@ -1,14 +1,27 @@
 """
 Tower class for Tower Defence game
+
+Implements Strategy Pattern for different attack strategies
+and State Pattern for tower state management
 """
 import pygame
 import math
 from config import *
 from projectile import Projectile
+from attack_strategy import ClosestEnemyStrategy, AttackStrategy
+from tower_state import IdleState, TowerState
+from event_system import EventManager, GameEvent
 
 
 class Tower:
-    """Represents a defensive tower"""
+    """
+    Represents a defensive tower with state and strategy patterns
+    
+    Uses:
+    - Strategy Pattern: Different attack strategies (closest, fastest, strongest, farthest)
+    - State Pattern: Tower states (Idle, Attacking, Upgraded)
+    - Observer Pattern: Emits events when important actions occur
+    """
     
     def __init__(self, x, y, tower_type='basic'):
         """
@@ -46,6 +59,41 @@ class Tower:
         self.height = 30
         self.target = None
         
+        # Strategy pattern: Default attack strategy is closest enemy
+        self.attack_strategy: AttackStrategy = ClosestEnemyStrategy()
+        
+        # State pattern: Tower starts in idle state
+        self.state: TowerState = IdleState()
+        self.state.enter(self)
+        
+        # Event system
+        self.event_manager = EventManager()
+        self.event_manager.emit(GameEvent.TOWER_PLACED, {
+            'tower': self,
+            'position': (self.x, self.y),
+            'type': self.tower_type
+        })
+    
+    def set_attack_strategy(self, strategy: AttackStrategy):
+        """
+        Change the attack strategy for this tower (Strategy Pattern)
+        
+        Args:
+            strategy: New attack strategy to use
+        """
+        self.attack_strategy = strategy
+    
+    def set_state(self, new_state: TowerState):
+        """
+        Change tower state (State Pattern)
+        
+        Args:
+            new_state: New state for the tower
+        """
+        self.state.exit(self)
+        self.state = new_state
+        self.state.enter(self)
+        
     def upgrade(self):
         """
         Upgrade the tower to next level
@@ -60,6 +108,19 @@ class Tower:
         self.damage += TOWER_UPGRADE_DAMAGE_BONUS
         self.range += TOWER_UPGRADE_RANGE_BONUS
         self.fire_rate = max(5, self.fire_rate - TOWER_UPGRADE_FIRE_RATE_BONUS)
+        
+        # Emit upgrade event
+        self.event_manager.emit(GameEvent.TOWER_UPGRADED, {
+            'tower': self,
+            'new_level': self.level,
+            'damage': self.damage,
+            'range': self.range
+        })
+        
+        # Update state to upgraded
+        from tower_state import UpgradedState
+        self.set_state(UpgradedState())
+        
         return True
     
     def get_upgrade_cost(self):
@@ -76,33 +137,22 @@ class Tower:
         """
         Find the closest enemy within range
         
+        Uses the current attack strategy to find target
+        
         Args:
             enemies: List of enemy objects
             
         Returns:
             Enemy object or None
         """
-        closest_enemy = None
-        closest_distance = self.range
-        
-        for enemy in enemies:
-            if enemy.health <= 0:
-                continue
-                
-            enemy_x, enemy_y = enemy.get_position()
-            dx = enemy_x - self.x
-            dy = enemy_y - self.y
-            distance = math.sqrt(dx**2 + dy**2)
-            
-            if distance < closest_distance:
-                closest_distance = distance
-                closest_enemy = enemy
-                
-        return closest_enemy
+        # Delegate to attack strategy
+        return self.attack_strategy.get_target(self, enemies)
     
     def update(self, enemies):
         """
         Update tower state and find targets
+        
+        Uses State Pattern to manage tower behavior
         
         Args:
             enemies: List of enemy objects
@@ -110,15 +160,13 @@ class Tower:
         Returns:
             Projectile object if tower fires, None otherwise
         """
-        self.frames_since_fire += 1
+        # Find new target if needed
+        if not self.target:
+            self.target = self.find_target(enemies)
         
         # Check if current target is still valid
         if self.target and self.target.health <= 0:
             self.target = None
-            
-        # Find new target if needed
-        if not self.target:
-            self.target = self.find_target(enemies)
         
         # Check if target is still in range
         if self.target:
@@ -129,13 +177,20 @@ class Tower:
             
             if distance > self.range:
                 self.target = None
+                # Emit event when enemy goes out of range
+                self.event_manager.emit(GameEvent.ENEMY_OUT_OF_RANGE, {
+                    'tower': self
+                })
+            else:
+                # Emit event when enemy is in range
+                self.event_manager.emit(GameEvent.ENEMY_IN_RANGE, {
+                    'tower': self,
+                    'enemy': self.target
+                })
         
-        # Fire at target if ready
-        if self.target and self.frames_since_fire >= self.fire_rate:
-            self.frames_since_fire = 0
-            return Projectile(self.x, self.y, self.target, self.damage, self.aoe_radius)
-            
-        return None
+        # Use attack strategy to handle firing
+        self.frames_since_fire += 1
+        return self.attack_strategy.attack(self, enemies)
     
     def draw(self, screen):
         """

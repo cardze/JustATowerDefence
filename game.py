@@ -1,5 +1,11 @@
 """
 Main Game class for Tower Defence
+
+Integrates all design patterns:
+- Strategy Pattern: Attack strategies for towers
+- State Pattern: Tower states management
+- Observer Pattern: Event system for game events
+- Builder Pattern: Tower construction and configuration
 """
 import pygame
 import logging
@@ -7,12 +13,22 @@ import random
 from config import *
 from enemy import Enemy
 from tower import Tower
+from event_system import EventManager, GameEvent, UIEventObserver
+from tower_builder import TowerBuilder, TowerConfiguration
+from attack_strategy import (
+    ClosestEnemyStrategy, FastestEnemyStrategy, 
+    StrongestEnemyStrategy, FarthestEnemyStrategy
+)
 
 logger = logging.getLogger(__name__)
 
 
 class Game:
-    """Main game logic and state management"""
+    """
+    Main game logic and state management
+    
+    Coordinates all game systems including towers, enemies, events, and strategies.
+    """
     
     def __init__(self):
         """Initialize game state"""
@@ -50,9 +66,21 @@ class Game:
             (600, 550)
         ]
         
+        # Initialize event system
+        self.event_manager = EventManager()
+        
+        # Default attack strategies for different tower types
+        self.tower_strategies = {
+            'basic': ClosestEnemyStrategy(),
+            'sniper': StrongestEnemyStrategy(),
+            'rapid': FastestEnemyStrategy(),
+            'cannon': ClosestEnemyStrategy()
+        }
+        
         logger.info("Game initialized - Money: $%d, Lives: %d, Speed: %.2fx", 
                    self.money, self.lives, self.speed_multiplier)
         
+
     def start_wave(self):
         """Start a new wave of enemies"""
         if not self.wave_in_progress and not self.game_over:
@@ -106,7 +134,7 @@ class Game:
             
     def add_tower(self, x, y, tower_type=None):
         """
-        Add a tower at the specified position
+        Add a tower at the specified position using Builder Pattern
         
         Args:
             x, y: Position to place tower
@@ -124,9 +152,26 @@ class Game:
         if self.money >= tower_cost:
             # Check if position is valid (not on path, not on another tower)
             if self.is_valid_tower_position(x, y):
-                tower = Tower(x, y, tower_type)
+                # Use Builder Pattern to construct tower
+                tower = (TowerBuilder(tower_type)
+                        .at_position(x, y)
+                        .with_level(1)
+                        .build())
+                
+                # Set default attack strategy based on tower type
+                if tower_type in self.tower_strategies:
+                    tower.set_attack_strategy(self.tower_strategies[tower_type])
+                
                 self.towers.append(tower)
                 self.money -= tower_cost
+                self.selected_tower = tower
+                
+                # Emit money changed event
+                self.event_manager.emit(GameEvent.MONEY_CHANGED, {
+                    'money': self.money,
+                    'amount': -tower_cost
+                })
+                
                 logger.info(f"{tower.name} placed at ({x}, {y}) - Money remaining: ${self.money}")
                 return True
         return False
@@ -193,6 +238,18 @@ class Game:
             self.towers.remove(tower)
             self.money += TOWER_SELL_VALUE
             self.selected_tower = None
+            
+            # Emit events
+            self.event_manager.emit(GameEvent.TOWER_SOLD, {
+                'tower': tower,
+                'position': (tower.x, tower.y)
+            })
+            
+            self.event_manager.emit(GameEvent.MONEY_CHANGED, {
+                'money': self.money,
+                'amount': TOWER_SELL_VALUE
+            })
+            
             logger.info(f"Tower sold at ({tower.x}, {tower.y}) for ${TOWER_SELL_VALUE}")
     
     def upgrade_tower(self, tower):
@@ -214,6 +271,13 @@ class Game:
         
         if tower.upgrade():
             self.money -= upgrade_cost
+            
+            # Emit money changed event
+            self.event_manager.emit(GameEvent.MONEY_CHANGED, {
+                'money': self.money,
+                'amount': -upgrade_cost
+            })
+            
             logger.info(f"Tower at ({tower.x}, {tower.y}) upgraded to level {tower.level} - Damage: {tower.damage}, Range: {tower.range}, Fire Rate: {tower.fire_rate}")
             return True
         
@@ -224,8 +288,6 @@ class Game:
         Generate a more complex path based on current wave number
         Paths become more intricate as waves progress
         """
-        import random
-        
         # Different path patterns based on wave progression
         wave_mod = (self.wave_number // 5) % 4
         
@@ -289,7 +351,9 @@ class Game:
         logger.info(f"Path complexity increased - Pattern {wave_mod + 1} activated for wave {self.wave_number}")
             
     def update(self):
-        """Update game state"""
+        """
+        Update game state with event emission
+        """
         if self.game_over:
             return
             
@@ -312,21 +376,37 @@ class Game:
                 self.lives -= 1
                 enemies_to_remove.append(enemy)
                 enemies_escaped += 1
+                
+                # Emit event
+                self.event_manager.emit(GameEvent.LIVES_CHANGED, {
+                    'lives': self.lives,
+                    'change': -1
+                })
+                
                 if self.lives <= 0:
                     self.game_over = True
+                    self.event_manager.emit(GameEvent.GAME_OVER, {
+                        'wave': self.wave_number,
+                        'towers': len(self.towers),
+                        'enemies_killed': self.enemies_killed
+                    })
                     logger.warning(f"Game Over! Wave: {self.wave_number}, Towers: {len(self.towers)}")
             elif enemy.health <= 0:
                 self.money += enemy.reward
                 enemies_to_remove.append(enemy)
                 enemies_killed += 1
                 
-                # Increase game speed (Comment #2746643544, #2746726455)
-                # This increases entire game FPS, not just enemy speed
+                # Emit money changed event
+                self.event_manager.emit(GameEvent.MONEY_CHANGED, {
+                    'money': self.money,
+                    'amount': enemy.reward
+                })
+                
+                # Increase game speed
                 self.enemies_killed += 1
                 self.speed_multiplier = min(MAX_SPEED_MULTIPLIER, 
                                            BASE_GAME_SPEED + (self.enemies_killed * SPEED_INCREASE_PER_KILL))
-                # Log speed change
-                if self.enemies_killed % 10 == 0:  # Log every 10 kills
+                if self.enemies_killed % 10 == 0:
                     logger.info(f"Game speed increased to {self.speed_multiplier:.2f}x (FPS: {int(FPS * self.speed_multiplier)})")
         
         for enemy in enemies_to_remove:
@@ -342,6 +422,15 @@ class Game:
         if self.wave_in_progress and self.enemies_to_spawn == 0 and len(self.enemies) == 0:
             self.wave_in_progress = False
             self.wave_complete_time = pygame.time.get_ticks()
+            
+            # Emit wave complete event
+            self.event_manager.emit(GameEvent.WAVE_COMPLETED, {
+                'wave': self.wave_number,
+                'money': self.money,
+                'lives': self.lives,
+                'towers': len(self.towers)
+            })
+            
             logger.info(f"Wave {self.wave_number} completed! Money: ${self.money}, Lives: {self.lives}, Towers: {len(self.towers)}")
         
         # Update towers
@@ -406,6 +495,31 @@ class Game:
             if tower.is_clicked(x, y):
                 return tower
         return None
+    
+    def change_tower_strategy(self, tower, strategy_type: str):
+        """
+        Change the attack strategy of a tower (Strategy Pattern)
+        
+        Args:
+            tower: Tower object
+            strategy_type: Type of strategy ('closest', 'fastest', 'strongest', 'farthest')
+            
+        Returns:
+            bool: True if strategy was changed
+        """
+        strategies = {
+            'closest': ClosestEnemyStrategy(),
+            'fastest': FastestEnemyStrategy(),
+            'strongest': StrongestEnemyStrategy(),
+            'farthest': FarthestEnemyStrategy()
+        }
+        
+        if strategy_type in strategies:
+            tower.set_attack_strategy(strategies[strategy_type])
+            logger.info(f"Tower at ({tower.x}, {tower.y}) strategy changed to {strategy_type}")
+            return True
+        
+        return False
     
     def get_current_fps(self):
         """

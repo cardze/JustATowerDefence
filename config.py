@@ -27,7 +27,7 @@ INITIAL_MONEY = 200
 INITIAL_LIVES = 20
 
 # Game speed settings (Comment #2746643544)
-SPEED_INCREASE_PER_KILL = 0.01  # 1% speed increase per kill (0.1x per 10 kills)
+SPEED_INCREASE_PER_KILL = 0.05  # 5% speed increase per kill (0.1x per 2 kills), intentionally raised from 0.01 (0.1x per 10 kills) to make gameplay faster
 MAX_SPEED_MULTIPLIER = 3.0  # Maximum 3x speed
 BASE_GAME_SPEED = 1.0
 

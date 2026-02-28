@@ -40,6 +40,8 @@ class UI:
         self.tower_buttons_y = 0
         self.upgrade_button_y = None
         self.sell_button_y = None
+        self.upgrade_button_rect = None
+        self.sell_button_rect = None
         
     def draw_sidebar(self, game):
         """
@@ -156,59 +158,72 @@ class UI:
         inst_text3 = self.font.render("  to upgrade/sell", True, YELLOW)
         self.screen.blit(inst_text3, (sidebar_x + 10, y_offset))
         
-        # Selected tower info
+        # Selected tower info (sidebar) and buttons (beside tower)
         if game.selected_tower:
-            y_offset += 50
+            selected_panel_start = SCREEN_HEIGHT - 120
+            y_offset = max(y_offset + 20, selected_panel_start)
             selected_text = self.font.render("Selected Tower:", True, WHITE)
             self.screen.blit(selected_text, (sidebar_x + 10, y_offset))
-            y_offset += 25
+            y_offset += 22
             
             # Tower stats
             tower = game.selected_tower
             level_text = self.font.render(f"Level: {tower.level}", True, WHITE)
             self.screen.blit(level_text, (sidebar_x + 10, y_offset))
-            y_offset += 20
+            y_offset += 18
             
             dmg_text = self.font.render(f"Damage: {tower.damage}", True, WHITE)
             self.screen.blit(dmg_text, (sidebar_x + 10, y_offset))
-            y_offset += 20
+            y_offset += 18
             
             rng_text = self.font.render(f"Range: {tower.range}", True, WHITE)
             self.screen.blit(rng_text, (sidebar_x + 10, y_offset))
-            y_offset += 30
+            
+            # Floating buttons beside tower
+            button_width = 120
+            button_height = 30
+            gap = 6
+            base_x = tower.x + tower.width // 2 + 10
+            base_y = tower.y - button_height - gap
+            
+            # Keep buttons within game area bounds
+            max_x = SCREEN_WIDTH - SIDEBAR_WIDTH - button_width - 5
+            min_x = 5
+            base_x = max(min_x, min(base_x, max_x))
+            base_y = max(5, min(base_y, SCREEN_HEIGHT - (button_height * 2 + gap + 5)))
             
             # Upgrade button
-            if tower.can_upgrade():
-                self.upgrade_button_y = y_offset  # Store for click detection
-                upgrade_button_rect = pygame.Rect(sidebar_x + BUTTON_PADDING, y_offset,
-                                              SIDEBAR_WIDTH - 2 * BUTTON_PADDING, BUTTON_HEIGHT)
-                upgrade_color = GREEN if game.money >= TOWER_UPGRADE_COST else GRAY
-                pygame.draw.rect(self.screen, upgrade_color, upgrade_button_rect)
-                pygame.draw.rect(self.screen, BLACK, upgrade_button_rect, 2)
-                
-                upgrade_text = self.font.render(f"Upgrade (${TOWER_UPGRADE_COST})", True, BLACK)
-                upgrade_text_rect = upgrade_text.get_rect(center=upgrade_button_rect.center)
+            upgrade_cost = tower.get_upgrade_cost()
+            if tower.can_upgrade() and upgrade_cost is not None:
+                self.upgrade_button_rect = pygame.Rect(base_x, base_y, button_width, button_height)
+                upgrade_color = GREEN if game.money >= upgrade_cost else GRAY
+                pygame.draw.rect(self.screen, upgrade_color, self.upgrade_button_rect)
+                pygame.draw.rect(self.screen, BLACK, self.upgrade_button_rect, 2)
+                upgrade_text = self.font.render(f"Upgrade (${upgrade_cost})", True, BLACK)
+                upgrade_text_rect = upgrade_text.get_rect(center=self.upgrade_button_rect.center)
                 self.screen.blit(upgrade_text, upgrade_text_rect)
-                y_offset += BUTTON_HEIGHT + 10
             else:
-                self.upgrade_button_y = None  # No upgrade button
-                max_text = self.font.render("MAX LEVEL", True, YELLOW)
-                self.screen.blit(max_text, (sidebar_x + 10, y_offset))
-                y_offset += 40
+                self.upgrade_button_rect = None
+                max_rect = pygame.Rect(base_x, base_y, button_width, button_height)
+                pygame.draw.rect(self.screen, GRAY, max_rect)
+                pygame.draw.rect(self.screen, BLACK, max_rect, 2)
+                max_text = self.font.render("MAX LEVEL", True, BLACK)
+                max_text_rect = max_text.get_rect(center=max_rect.center)
+                self.screen.blit(max_text, max_text_rect)
             
             # Sell button
-            self.sell_button_y = y_offset  # Store for click detection
-            sell_button_rect = pygame.Rect(sidebar_x + BUTTON_PADDING, y_offset,
-                                          SIDEBAR_WIDTH - 2 * BUTTON_PADDING, BUTTON_HEIGHT)
-            pygame.draw.rect(self.screen, RED, sell_button_rect)
-            pygame.draw.rect(self.screen, BLACK, sell_button_rect, 2)
-            
+            sell_y = base_y + button_height + gap
+            self.sell_button_rect = pygame.Rect(base_x, sell_y, button_width, button_height)
+            pygame.draw.rect(self.screen, RED, self.sell_button_rect)
+            pygame.draw.rect(self.screen, BLACK, self.sell_button_rect, 2)
             sell_text = self.font.render(f"Sell (${TOWER_SELL_VALUE})", True, WHITE)
-            sell_text_rect = sell_text.get_rect(center=sell_button_rect.center)
+            sell_text_rect = sell_text.get_rect(center=self.sell_button_rect.center)
             self.screen.blit(sell_text, sell_text_rect)
         else:
             self.upgrade_button_y = None
             self.sell_button_y = None
+            self.upgrade_button_rect = None
+            self.sell_button_rect = None
         
         return button_rect
     
@@ -262,8 +277,23 @@ def main():
                     # Check if clicking in game area
                     if mouse_x < SCREEN_WIDTH - SIDEBAR_WIDTH:
                         if not game.game_over:
-                            # Try to place tower
-                            game.add_tower(mouse_x, mouse_y)
+                            # Handle floating upgrade/sell buttons first
+                            if game.selected_tower:
+                                if ui.upgrade_button_rect and ui.upgrade_button_rect.collidepoint(mouse_x, mouse_y):
+                                    if game.upgrade_tower(game.selected_tower):
+                                        logger.info("Tower upgrade successful")
+                                    continue
+                                if ui.sell_button_rect and ui.sell_button_rect.collidepoint(mouse_x, mouse_y):
+                                    game.sell_tower(game.selected_tower)
+                                    continue
+
+                            # Select tower if clicked, otherwise place new tower
+                            clicked_tower = game.get_tower_at_position(mouse_x, mouse_y)
+                            if clicked_tower:
+                                game.selected_tower = clicked_tower
+                            else:
+                                game.selected_tower = None
+                                game.add_tower(mouse_x, mouse_y)
                     else:
                         # Check tower type selection buttons (using stored position)
                         sidebar_x = SCREEN_WIDTH - SIDEBAR_WIDTH
@@ -286,22 +316,7 @@ def main():
                         if button_rect.collidepoint(mouse_x, mouse_y):
                             game.start_wave()
                         
-                        # Check if clicking upgrade or sell button for selected tower
-                        if game.selected_tower:
-                            # Upgrade button (if available)
-                            if ui.upgrade_button_y is not None:
-                                upgrade_button_rect = pygame.Rect(sidebar_x + BUTTON_PADDING, ui.upgrade_button_y,
-                                                              SIDEBAR_WIDTH - 2 * BUTTON_PADDING, BUTTON_HEIGHT)
-                                if upgrade_button_rect.collidepoint(mouse_x, mouse_y):
-                                    if game.upgrade_tower(game.selected_tower):
-                                        logger.info("Tower upgrade successful")
-                            
-                            # Sell button
-                            if ui.sell_button_y is not None:
-                                sell_button_rect = pygame.Rect(sidebar_x + BUTTON_PADDING, ui.sell_button_y,
-                                                              SIDEBAR_WIDTH - 2 * BUTTON_PADDING, BUTTON_HEIGHT)
-                                if sell_button_rect.collidepoint(mouse_x, mouse_y):
-                                    game.sell_tower(game.selected_tower)
+                        # Floating buttons are handled in the game area click block
                 
                 elif event.button == 3:  # Right click
                     if mouse_x < SCREEN_WIDTH - SIDEBAR_WIDTH:
