@@ -16,7 +16,7 @@
 策略模式允许塔在运行时动态改变其攻击策略，而无需修改塔的代码。
 
 ### 文件
-- **attack_strategy.py**: 定义了所有攻击策略
+- **tower_defence/combat/attack_strategy.py**: 定义了所有攻击策略
 
 ### 实现的策略
 
@@ -78,13 +78,13 @@ projectile = tower.update(enemies)
 状态模式用于管理塔的不同状态，每个状态有不同的行为。
 
 ### 文件
-- **tower_state.py**: 定义了塔的所有状态
+- **tower_defence/towers/tower_state.py**: 定义了塔的所有状态
 
 ### 实现的状态
 
 #### 1. 闲置状态 (IdleState)
 ```python
-from tower_state import IdleState
+from tower_defence.towers.tower_state import IdleState
 tower.set_state(IdleState())
 ```
 - 塔正在搜索目标
@@ -92,7 +92,7 @@ tower.set_state(IdleState())
 
 #### 2. 攻击状态 (AttackingState)
 ```python
-from tower_state import AttackingState
+from tower_defence.towers.tower_state import AttackingState
 tower.set_state(AttackingState())
 ```
 - 塔正在主动攻击目标
@@ -100,7 +100,7 @@ tower.set_state(AttackingState())
 
 #### 3. 升级状态 (UpgradedState)
 ```python
-from tower_state import UpgradedState
+from tower_defence.towers.tower_state import UpgradedState
 tower.set_state(UpgradedState())
 ```
 - 塔已被升级
@@ -108,7 +108,7 @@ tower.set_state(UpgradedState())
 
 #### 4. 冷却状态 (CooldownState)
 ```python
-from tower_state import CooldownState
+from tower_defence.towers.tower_state import CooldownState
 tower.set_state(CooldownState(cooldown_frames=10))
 ```
 - 塔在冷却中
@@ -141,7 +141,7 @@ print(tower.state.get_state_name())  # "Attacking"
 观察者模式实现了事件驱动的架构，允许游戏组件对重要事件做出反应。
 
 ### 文件
-- **event_system.py**: 定义了事件管理系统
+- **tower_defence/systems/event_system.py**: 定义了事件管理系统
 
 ### 核心组件
 
@@ -149,7 +149,7 @@ print(tower.state.get_state_name())  # "Attacking"
 中央事件总线，管理所有事件的发射和订阅。
 
 ```python
-from event_system import EventManager, GameEvent
+from tower_defence.systems.event_system import EventManager, GameEvent
 
 event_manager = EventManager()
 
@@ -185,7 +185,7 @@ event_manager.emit(GameEvent.ENEMY_KILLED, {'reward': 10})
 
 #### 1. 游戏事件观察者
 ```python
-from event_system import GameEventObserver
+from tower_defence.systems.event_system import GameEventObserver
 
 observer = GameEventObserver("Game Logger")
 event_manager.subscribe(GameEvent.TOWER_PLACED, observer)
@@ -193,7 +193,7 @@ event_manager.subscribe(GameEvent.TOWER_PLACED, observer)
 
 #### 2. UI事件观察者
 ```python
-from event_system import UIEventObserver
+from tower_defence.systems.event_system import UIEventObserver
 
 ui_observer = UIEventObserver(ui)
 event_manager.subscribe(GameEvent.MONEY_CHANGED, ui_observer)
@@ -202,7 +202,7 @@ event_manager.subscribe(GameEvent.LIVES_CHANGED, ui_observer)
 
 ### 用法示例
 ```python
-from event_system import EventManager, GameEvent
+from tower_defence.systems.event_system import EventManager, GameEvent
 
 # 创建事件管理器
 events = EventManager()
@@ -235,7 +235,7 @@ events.emit(GameEvent.WAVE_COMPLETED, {
 建造者模式提供了灵活的方式来构造复杂的塔配置，特别适用于升级系统。
 
 ### 文件
-- **tower_builder.py**: 定义了塔构造器和预定义配置
+- **tower_defence/towers/tower_builder.py**: 定义了塔构造器和预定义配置
 
 ### 核心类
 
@@ -243,7 +243,7 @@ events.emit(GameEvent.WAVE_COMPLETED, {
 流式API构造塔
 
 ```python
-from tower_builder import TowerBuilder
+from tower_defence.towers.tower_builder import TowerBuilder
 
 # 使用流式API构造塔
 tower = (TowerBuilder('basic')
@@ -258,7 +258,7 @@ tower = (TowerBuilder('basic')
 预定义的塔配置
 
 ```python
-from tower_builder import TowerConfiguration
+from tower_defence.towers.tower_builder import TowerConfiguration
 
 # 使用预定义配置
 basic = TowerConfiguration.basic_tower(100, 100)
@@ -303,7 +303,7 @@ cannon = TowerConfiguration.cannon_tower(300, 300)
 用于处理塔升级
 
 ```python
-from tower_builder import TowerUpgradeBuilder
+from tower_defence.towers.tower_builder import TowerUpgradeBuilder
 
 tower = Tower(100, 100, 'basic')
 
@@ -326,10 +326,10 @@ upgrade.upgrade_levels(2).add_damage_bonus(20).apply()
 ### 在游戏中使用所有模式
 
 ```python
-from game import Game
-from attack_strategy import StrongestEnemyStrategy
-from tower_builder import TowerBuilder
-from event_system import GameEvent, GameEventObserver
+from tower_defence.app.game import Game
+from tower_defence.combat.attack_strategy import StrongestEnemyStrategy
+from tower_defence.towers.tower_builder import TowerBuilder
+from tower_defence.systems.event_system import GameEvent, GameEventObserver
 
 # 创建游戏
 game = Game()
@@ -387,7 +387,7 @@ game.update()
 
 ### 添加新的攻击策略
 ```python
-# 在 attack_strategy.py 中
+# 在 tower_defence/combat/attack_strategy.py 中
 class CustomStrategy(AttackStrategy):
     def get_target(self, tower, enemies):
         # 实现自定义逻辑
@@ -400,7 +400,7 @@ class CustomStrategy(AttackStrategy):
 
 ### 添加新的塔状态
 ```python
-# 在 tower_state.py 中
+# 在 tower_defence/towers/tower_state.py 中
 class CustomState(TowerState):
     def enter(self, tower):
         pass
@@ -417,7 +417,7 @@ class CustomState(TowerState):
 
 ### 添加新的游戏事件
 ```python
-# 在 event_system.py 中的 GameEvent
+# 在 tower_defence/systems/event_system.py 中的 GameEvent
 class GameEvent(Enum):
     # ... 现有事件 ...
     CUSTOM_EVENT = "custom_event"

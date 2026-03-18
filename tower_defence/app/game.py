@@ -10,12 +10,11 @@ Integrates all design patterns:
 import pygame
 import logging
 import random
-from config import *
-from enemy import Enemy
-from tower import Tower
-from event_system import EventManager, GameEvent, UIEventObserver
-from tower_builder import TowerBuilder, TowerConfiguration
-from attack_strategy import (
+from ..core.config import *
+from ..entities.enemy import Enemy
+from ..systems.event_system import EventManager, GameEvent, UIEventObserver
+from ..towers.tower_builder import TowerBuilder, TowerConfiguration
+from ..combat.attack_strategy import (
     ClosestEnemyStrategy, FastestEnemyStrategy, 
     StrongestEnemyStrategy, FarthestEnemyStrategy
 )
@@ -283,6 +282,30 @@ class Game:
         
         return False
     
+    def pet_money_tower(self, tower):
+        """
+        Pet a money-generating dog tower to gain $1
+        
+        Args:
+            tower: Tower object to pet (should be dog tower)
+            
+        Returns:
+            bool: True if petting was successful
+        """
+        if tower not in self.towers or tower.tower_type != 'dog':
+            return False
+            
+        self.money += 1
+        
+        # Emit money changed event
+        self.event_manager.emit(GameEvent.MONEY_CHANGED, {
+            'money': self.money,
+            'amount': 1
+        })
+        
+        logger.info(f"Dog tower at ({tower.x}, {tower.y}) petted! Earned $1")
+        return True
+    
     def generate_complex_path(self):
         """
         Generate a more complex path based on current wave number
@@ -520,6 +543,36 @@ class Game:
             return True
         
         return False
+    
+    def restart_level(self):
+        """
+        Restart the current level - reset all game state to initial values
+        
+        Clears:
+        - All towers
+        - All enemies
+        - All projectiles
+        - Money and lives reset to initial values
+        - Wave number reset to 0
+        - Speed multiplier reset to base
+        - Stops any current wave
+        """
+        self.money = INITIAL_MONEY
+        self.lives = INITIAL_LIVES
+        self.wave_number = 0
+        self.enemies = []
+        self.towers = []
+        self.projectiles = []
+        self.wave_in_progress = False
+        self.enemies_to_spawn = 0
+        self.spawn_timer = 0
+        self.speed_multiplier = BASE_GAME_SPEED
+        self.enemies_killed = 0
+        self.selected_tower = None
+        self.game_over = False
+        
+        logger.info("Level restarted - Money: $%d, Lives: %d, Speed: %.2fx", 
+                   self.money, self.lives, self.speed_multiplier)
     
     def get_current_fps(self):
         """

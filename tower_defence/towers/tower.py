@@ -6,11 +6,10 @@ and State Pattern for tower state management
 """
 import pygame
 import math
-from config import *
-from projectile import Projectile
-from attack_strategy import ClosestEnemyStrategy, AttackStrategy
-from tower_state import IdleState, TowerState
-from event_system import EventManager, GameEvent
+from ..core.config import *
+from ..combat.attack_strategy import ClosestEnemyStrategy, AttackStrategy
+from .tower_state import IdleState, TowerState
+from ..systems.event_system import EventManager, GameEvent
 
 
 class Tower:
@@ -29,7 +28,7 @@ class Tower:
         
         Args:
             x, y: Position of the tower
-            tower_type: Type of tower ('basic', 'sniper', 'rapid', 'cannon')
+            tower_type: Type of tower ('basic', 'sniper', 'rapid', 'cannon', 'dog')
         """
         self.x = x
         self.y = y
@@ -118,7 +117,7 @@ class Tower:
         })
         
         # Update state to upgraded
-        from tower_state import UpgradedState
+        from .tower_state import UpgradedState
         self.set_state(UpgradedState())
         
         return True
@@ -188,9 +187,8 @@ class Tower:
                     'enemy': self.target
                 })
         
-        # Use attack strategy to handle firing
-        self.frames_since_fire += 1
-        return self.attack_strategy.attack(self, enemies)
+        # Use state to handle firing behavior and projectile creation
+        return self.state.handle_attack(self, enemies)
     
     def draw(self, screen):
         """
@@ -221,11 +219,12 @@ class Tower:
             text_rect = level_text.get_rect(center=(self.x, self.y))
             screen.blit(level_text, text_rect)
         
-        # Draw range circle (semi-transparent)
-        range_surface = pygame.Surface((self.range * 2, self.range * 2), pygame.SRCALPHA)
-        pygame.draw.circle(range_surface, (*GRAY, 50), (self.range, self.range), self.range)
-        screen.blit(range_surface, 
-                   (self.x - self.range, self.y - self.range))
+        # Draw range circle (semi-transparent) - only for towers with range
+        if self.range > 0:
+            range_surface = pygame.Surface((self.range * 2, self.range * 2), pygame.SRCALPHA)
+            pygame.draw.circle(range_surface, (*GRAY, 50), (self.range, self.range), self.range)
+            screen.blit(range_surface, 
+                       (self.x - self.range, self.y - self.range))
     
     def get_position(self):
         """Return tower position as tuple"""

@@ -4,7 +4,7 @@ Builder Pattern: Constructing complex tower configurations
 This module provides a flexible way to build towers with various configurations,
 particularly useful for upgrade systems and different tower types.
 """
-from config import TOWER_TYPES, TOWER_UPGRADE_DAMAGE_BONUS, TOWER_UPGRADE_RANGE_BONUS, TOWER_UPGRADE_FIRE_RATE_BONUS
+from ..core.config import TOWER_TYPES, TOWER_UPGRADE_DAMAGE_BONUS, TOWER_UPGRADE_RANGE_BONUS, TOWER_UPGRADE_FIRE_RATE_BONUS
 
 
 class TowerBuilder:
@@ -117,7 +117,7 @@ class TowerBuilder:
             Tower instance with configured parameters
         """
         # Import here to avoid circular import
-        from tower import Tower
+        from .tower import Tower
         
         tower = Tower(self.x, self.y, self.tower_type)
         

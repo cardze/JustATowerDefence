@@ -3,7 +3,7 @@
 ## 🎯 四大設計模式快速查找
 
 ### 1️⃣ 策略模式 (Strategy)
-**檔案**: `attack_strategy.py`
+**檔案**: `tower_defence/combat/attack_strategy.py`
 
 **何時使用**: 需要多種算法/行為
 
@@ -29,13 +29,13 @@ tower.set_attack_strategy(FarthestEnemyStrategy())
 ---
 
 ### 2️⃣ 狀態模式 (State)
-**檔案**: `tower_state.py`
+**檔案**: `tower_defence/towers/tower_state.py`
 
 **何時使用**: 對象有多個狀態，行為不同
 
 **快速用法**:
 ```python
-from tower_state import AttackingState, IdleState, UpgradedState
+from tower_defence.towers.tower_state import AttackingState, IdleState, UpgradedState
 
 tower = Tower(100, 100, 'basic')
 
@@ -59,13 +59,13 @@ print(tower.state.get_state_name())
 ---
 
 ### 3️⃣ 觀察者模式 (Observer)
-**檔案**: `event_system.py`
+**檔案**: `tower_defence/systems/event_system.py`
 
 **何時使用**: 對象間需要解耦通信
 
 **快速用法**:
 ```python
-from event_system import EventManager, GameEvent
+from tower_defence.systems.event_system import EventManager, GameEvent
 
 # 獲取事件管理器
 events = EventManager()
@@ -93,13 +93,13 @@ events.emit(GameEvent.ENEMY_KILLED, {'reward': 10})
 ---
 
 ### 4️⃣ 建造者模式 (Builder)
-**檔案**: `tower_builder.py`
+**檔案**: `tower_defence/towers/tower_builder.py`
 
 **何時使用**: 創建複雜對象配置
 
 **快速用法**:
 ```python
-from tower_builder import TowerBuilder, TowerConfiguration
+from tower_defence.towers.tower_builder import TowerBuilder, TowerConfiguration
 
 # 方式1: 使用流式API
 tower = (TowerBuilder('basic')
@@ -122,7 +122,7 @@ tower = (TowerBuilder('cannon')
     .build())
 
 # 升級構造器
-from tower_builder import TowerUpgradeBuilder
+from tower_defence.towers.tower_builder import TowerUpgradeBuilder
 upgrade = TowerUpgradeBuilder(tower)
 upgrade.upgrade_levels(1).add_damage_bonus(20).apply()
 ```
@@ -132,24 +132,24 @@ upgrade.upgrade_levels(1).add_damage_bonus(20).apply()
 ## 📖 常見操作
 
 ### 添加新的攻擊策略
-1. 在 `attack_strategy.py` 中創建新類
+1. 在 `tower_defence/combat/attack_strategy.py` 中創建新類
 2. 繼承 `AttackStrategy`
 3. 實現 `get_target()` 和 `attack()` 方法
 4. 使用 `tower.set_attack_strategy()`
 
 ### 添加新的塔狀態
-1. 在 `tower_state.py` 中創建新類
+1. 在 `tower_defence/towers/tower_state.py` 中創建新類
 2. 繼承 `TowerState`
 3. 實現必要的方法
 4. 使用 `tower.set_state()`
 
 ### 添加新的遊戲事件
-1. 在 `event_system.py` 的 `GameEvent` 中添加
+1. 在 `tower_defence/systems/event_system.py` 的 `GameEvent` 中添加
 2. 在適當的地方調用 `event_manager.emit()`
 3. 訂閱並處理事件
 
 ### 添加新的塔配置
-1. 在 `tower_builder.py` 的 `TowerConfiguration` 中添加方法
+1. 在 `tower_defence/towers/tower_builder.py` 的 `TowerConfiguration` 中添加方法
 2. 使用 `TowerBuilder` 配置
 3. 提供快速訪問方法
 
@@ -159,10 +159,10 @@ upgrade.upgrade_levels(1).add_damage_bonus(20).apply()
 
 | 模式 | 集成於 | 用途 |
 |------|--------|------|
-| 策略 | tower.py | 選擇攻擊目標 |
-| 狀態 | tower.py | 管理塔的狀態 |
-| 觀察者 | game.py, enemy.py | 事件通知 |
-| 建造者 | game.py | 創建塔 |
+| 策略 | tower_defence/towers/tower.py | 選擇攻擊目標 |
+| 狀態 | tower_defence/towers/tower.py | 管理塔的狀態 |
+| 觀察者 | tower_defence/app/game.py, tower_defence/entities/enemy.py | 事件通知 |
+| 建造者 | tower_defence/app/game.py | 創建塔 |
 
 ---
 
@@ -219,7 +219,7 @@ print(type(tower.attack_strategy).__name__)
 
 ### 監控事件
 ```python
-from event_system import GameEventObserver
+from tower_defence.systems.event_system import GameEventObserver
 observer = GameEventObserver("Debug")
 game.event_manager.subscribe(GameEvent.TOWER_PLACED, observer)
 ```

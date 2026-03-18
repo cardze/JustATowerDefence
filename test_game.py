@@ -10,11 +10,11 @@ import os
 os.environ['SDL_VIDEODRIVER'] = 'dummy'
 
 import pygame
-from game import Game
-from enemy import Enemy
-from tower import Tower
-from projectile import Projectile
-from config import *
+from tower_defence.app.game import Game
+from tower_defence.entities.enemy import Enemy
+from tower_defence.entities.projectile import Projectile
+from tower_defence.towers.tower import Tower
+from tower_defence.core.config import *
 
 
 def test_enemy_creation():
@@ -221,6 +221,198 @@ def test_path_generation():
     print("✓ Path generation test passed")
 
 
+def test_restart_level_resets_wave():
+    """Test restart level resets wave to 1"""
+    pygame.init()
+    game = Game()
+    
+    # Advance to wave 3
+    game.wave_number = 3
+    game.start_wave()
+    
+    # Restart level
+    game.restart_level()
+    
+    assert game.wave_number == 0, "Wave number should reset to 0"
+    print("✓ Restart level - wave reset test passed")
+
+
+def test_restart_level_clears_towers():
+    """Test restart level removes all towers"""
+    pygame.init()
+    game = Game()
+    game.money = 1000
+    
+    # Add multiple towers
+    game.add_tower(400, 300)
+    game.add_tower(600, 400)
+    
+    assert len(game.towers) > 0, "Should have towers before restart"
+    
+    # Restart level
+    game.restart_level()
+    
+    assert len(game.towers) == 0, "All towers should be removed"
+    print("✓ Restart level - towers cleared test passed")
+
+
+def test_restart_level_resets_money():
+    """Test restart level resets money to initial amount"""
+    pygame.init()
+    game = Game()
+    
+    initial_money = game.money
+    game.money = 100
+    
+    # Restart level
+    game.restart_level()
+    
+    assert game.money == initial_money, "Money should reset to initial amount"
+    print("✓ Restart level - money reset test passed")
+
+
+def test_restart_level_resets_lives():
+    """Test restart level resets lives to initial amount"""
+    pygame.init()
+    game = Game()
+    
+    initial_lives = game.lives
+    game.lives = 1
+    
+    # Restart level
+    game.restart_level()
+    
+    assert game.lives == initial_lives, "Lives should reset to initial amount"
+    print("✓ Restart level - lives reset test passed")
+
+
+def test_restart_level_clears_enemies():
+    """Test restart level removes all enemies"""
+    pygame.init()
+    game = Game()
+    
+    # Start a wave and spawn enemies
+    game.start_wave()
+    game.spawn_enemy()
+    game.spawn_enemy()
+    
+    assert len(game.enemies) > 0, "Should have enemies before restart"
+    
+    # Restart level
+    game.restart_level()
+    
+    assert len(game.enemies) == 0, "All enemies should be removed"
+    print("✓ Restart level - enemies cleared test passed")
+
+
+def test_restart_level_resets_speed_multiplier():
+    """Test restart level resets speed multiplier"""
+    pygame.init()
+    game = Game()
+    
+    initial_speed = game.speed_multiplier
+    game.speed_multiplier = 2.0
+    
+    # Restart level
+    game.restart_level()
+    
+    assert game.speed_multiplier == initial_speed, "Speed multiplier should reset"
+    print("✓ Restart level - speed multiplier reset test passed")
+
+
+def test_restart_level_stops_wave():
+    """Test restart level stops current wave"""
+    pygame.init()
+    game = Game()
+    
+    # Start a wave
+    game.start_wave()
+    assert game.wave_in_progress, "Wave should be in progress"
+    
+    # Restart level
+    game.restart_level()
+    
+    assert not game.wave_in_progress, "Wave should be stopped"
+    print("✓ Restart level - wave stopped test passed")
+
+
+def test_dog_tower_creation():
+    """Test dog tower can be created"""
+    pygame.init()
+    game = Game()
+    game.money = 1000
+    game.selected_tower_type = 'dog'
+    
+    success = game.add_tower(400, 300)
+    
+    assert success, "Dog tower should be placed successfully"
+    assert len(game.towers) == 1, "Should have one tower"
+    tower = game.towers[0]
+    assert tower.tower_type == 'dog', "Tower should be dog type"
+    print("✓ Dog tower creation test passed")
+
+
+def test_dog_tower_petting_generates_money():
+    """Test petting dog tower generates $1"""
+    pygame.init()
+    game = Game()
+    game.money = 1000
+    game.selected_tower_type = 'dog'
+    
+    # Add dog tower
+    game.add_tower(400, 300)
+    dog_tower = game.towers[0]
+    
+    initial_money = game.money
+    game.pet_money_tower(dog_tower)
+    
+    assert game.money == initial_money + 1, "Should gain $1 from petting"
+    print("✓ Dog tower petting generates money test passed")
+
+
+def test_dog_tower_multiple_pets():
+    """Test multiple pets generate multiple dollars"""
+    pygame.init()
+    game = Game()
+    game.money = 1000
+    game.selected_tower_type = 'dog'
+    
+    # Add dog tower
+    game.add_tower(400, 300)
+    dog_tower = game.towers[0]
+    
+    initial_money = game.money
+    for _ in range(5):
+        game.pet_money_tower(dog_tower)
+    
+    assert game.money == initial_money + 5, "Should gain $5 from 5 pets"
+    print("✓ Dog tower multiple pets test passed")
+
+
+def test_enemy_reward_reduced_by_25():
+    """Test enemy rewards are reduced by 25%"""
+    pygame.init()
+    game = Game()
+    
+    path = [(0, 0), (100, 0)]
+    enemy = Enemy(path, wave_number=1, enemy_type='basic')
+    
+    # Original basic enemy reward is 10, after 25% reduction should be 7.5 (rounded to 7)
+    expected_reward = int(ENEMY_TYPES['basic']['reward'] * ENEMY_REWARD_REDUCTION_FACTOR)
+    
+    assert enemy.reward == expected_reward, f"Enemy reward should be {expected_reward}, got {enemy.reward}"
+    print("✓ Enemy reward reduced test passed")
+
+
+def test_dog_tower_has_correct_stats():
+    """Test dog tower has correct cost and stats"""
+    dog_config = TOWER_TYPES['dog']
+    
+    assert dog_config['cost'] == 75, "Dog tower should cost $75"
+    assert dog_config['name'] == 'Dog Tower', "Should have correct name"
+    print("✓ Dog tower stats test passed")
+
+
 def run_all_tests():
     """Run all tests"""
     print("Running Tower Defence Game Tests...")
@@ -239,7 +431,19 @@ def run_all_tests():
         test_game_update,
         test_tower_upgrade,
         test_tower_max_upgrade,
-        test_path_generation
+        test_path_generation,
+        test_restart_level_resets_wave,
+        test_restart_level_clears_towers,
+        test_restart_level_resets_money,
+        test_restart_level_resets_lives,
+        test_restart_level_clears_enemies,
+        test_restart_level_resets_speed_multiplier,
+        test_restart_level_stops_wave,
+        test_dog_tower_creation,
+        test_dog_tower_petting_generates_money,
+        test_dog_tower_multiple_pets,
+        test_enemy_reward_reduced_by_25,
+        test_dog_tower_has_correct_stats
     ]
     
     failed = 0

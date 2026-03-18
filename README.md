@@ -36,6 +36,19 @@ Run the game:
 python main.py
 ```
 
+## Project Structure
+
+The runtime code now lives under the `tower_defence/` package:
+
+- `tower_defence/app/`: game loop and application flow
+- `tower_defence/core/`: shared configuration constants
+- `tower_defence/entities/`: enemies and projectiles
+- `tower_defence/towers/`: towers, builders, and tower states
+- `tower_defence/combat/`: attack strategies
+- `tower_defence/systems/`: event system and observers
+
+The repository-root `main.py` remains as a compatibility entry point that launches `tower_defence.app.main`.
+
 ### Controls
 - **Tower Type Buttons (B/S/R/C)**: Click to select tower type before building
 - **Left Click**: Place a tower in the game area
@@ -147,6 +160,7 @@ The game logs all important events to `tower_defence.log`:
 - Frame Rate: 60 FPS
 - Comprehensive logging system
 - Dynamic path generation
+- Source layout organized under the `tower_defence/` package for clearer module boundaries
 
 ## License
 See LICENSE file for details.

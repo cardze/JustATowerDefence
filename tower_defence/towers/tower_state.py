@@ -96,7 +96,7 @@ class AttackingState(TowerState):
         if tower.frames_since_fire >= tower.fire_rate:
             tower.frames_since_fire = 0
             # Import here to avoid circular import
-            from projectile import Projectile
+            from ..entities.projectile import Projectile
             return Projectile(tower.x, tower.y, tower.target, tower.damage, tower.aoe_radius)
         
         return None
@@ -129,7 +129,7 @@ class UpgradedState(TowerState):
                 tower.frames_since_fire += 1
                 if tower.frames_since_fire >= tower.fire_rate:
                     tower.frames_since_fire = 0
-                    from projectile import Projectile
+                    from ..entities.projectile import Projectile
                     return Projectile(tower.x, tower.y, tower.target, tower.damage, tower.aoe_radius)
         
         return None

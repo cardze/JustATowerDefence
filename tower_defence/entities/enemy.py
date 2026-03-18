@@ -5,8 +5,8 @@ Implements Observer Pattern for event notifications
 """
 import pygame
 import math
-from config import *
-from event_system import EventManager, GameEvent
+from ..core.config import *
+from ..systems.event_system import EventManager, GameEvent
 
 
 class Enemy:
@@ -36,7 +36,9 @@ class Enemy:
         self.base_speed = enemy_config['speed']
         self.speed = self.base_speed
         base_health = enemy_config['health']
-        self.reward = enemy_config['reward'] + (wave_number - 1) * 2
+        base_reward = enemy_config['reward'] + (wave_number - 1) * 2
+        # Apply reward reduction factor
+        self.reward = int(base_reward * ENEMY_REWARD_REDUCTION_FACTOR)
         self.color = enemy_config['color']
         self.radius = enemy_config['radius']
         

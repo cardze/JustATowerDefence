@@ -9,16 +9,19 @@ import sys
 import py_compile
 from pathlib import Path
 
+
+PATTERN_FILES = [
+    'tower_defence/combat/attack_strategy.py',
+    'tower_defence/towers/tower_state.py',
+    'tower_defence/systems/event_system.py',
+    'tower_defence/towers/tower_builder.py',
+]
+
 def validate_files():
     """Validate all Python files for syntax errors"""
     
     base_path = Path(__file__).parent
-    files_to_check = [
-        'attack_strategy.py',
-        'tower_state.py',
-        'event_system.py',
-        'tower_builder.py',
-    ]
+    files_to_check = PATTERN_FILES
     
     print("=" * 60)
     print("DESIGN PATTERNS - SYNTAX VALIDATION")
@@ -44,15 +47,15 @@ def validate_files():
         print("✓ All files have valid syntax!")
         print()
         print("Design Patterns Implemented:")
-        print("  1. Strategy Pattern       - attack_strategy.py")
-        print("  2. State Pattern          - tower_state.py")
-        print("  3. Observer Pattern       - event_system.py")
-        print("  4. Builder Pattern        - tower_builder.py")
+        print("  1. Strategy Pattern       - tower_defence/combat/attack_strategy.py")
+        print("  2. State Pattern          - tower_defence/towers/tower_state.py")
+        print("  3. Observer Pattern       - tower_defence/systems/event_system.py")
+        print("  4. Builder Pattern        - tower_defence/towers/tower_builder.py")
         print()
         print("Modified Files:")
-        print("  - tower.py        (integrated Strategy & State patterns)")
-        print("  - enemy.py        (integrated Observer pattern)")
-        print("  - game.py         (integrated all patterns)")
+        print("  - tower_defence/towers/tower.py   (integrated Strategy & State patterns)")
+        print("  - tower_defence/entities/enemy.py (integrated Observer pattern)")
+        print("  - tower_defence/app/game.py       (integrated all patterns)")
         print()
         print("New Files:")
         print("  - DESIGN_PATTERNS.md          (comprehensive documentation)")

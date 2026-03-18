@@ -3,7 +3,7 @@ Projectile class for Tower Defence game
 """
 import pygame
 import math
-from config import *
+from ..core.config import *
 
 
 class Projectile:

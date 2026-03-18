@@ -9,22 +9,22 @@
 ## 📊 重構概況
 
 ### 新增檔案 (7個)
-1. **attack_strategy.py** (165 行)
+1. **tower_defence/combat/attack_strategy.py** (165 行)
    - 實現策略模式
    - 4個具體策略類
    - 攻擊目標選擇的靈活方案
 
-2. **tower_state.py** (147 行)
+2. **tower_defence/towers/tower_state.py** (147 行)
    - 實現狀態模式
    - 5個狀態類
    - 塔的狀態管理和轉換
 
-3. **event_system.py** (232 行)
+3. **tower_defence/systems/event_system.py** (232 行)
    - 實現觀察者模式
    - 13個遊戲事件
    - 事件驅動架構
 
-4. **tower_builder.py** (263 行)
+4. **tower_defence/towers/tower_builder.py** (263 行)
    - 實現建造者模式
    - 3個構造器類
    - 塔配置的靈活創建
@@ -46,7 +46,7 @@
 
 ### 修改的檔案 (3個)
 
-#### 1. tower.py
+#### 1. tower_defence/towers/tower.py
 **新增功能**:
 - `set_attack_strategy(strategy)` - 動態改變攻擊策略
 - `set_state(new_state)` - 改變塔的狀態
@@ -59,7 +59,7 @@
 - 代碼更加模塊化
 - 易於擴展
 
-#### 2. enemy.py
+#### 2. tower_defence/entities/enemy.py
 **新增功能**:
 - 事件發送（被擊殺、逃脫）
 - 更新的 `take_damage()` 方法
@@ -69,7 +69,7 @@
 - 事件驅動的通知
 - 與遊戲系統解耦
 
-#### 3. game.py
+#### 3. tower_defence/app/game.py
 **新增功能**:
 - `change_tower_strategy(tower, strategy_type)` 方法
 - 使用 TowerBuilder 創建塔
@@ -85,7 +85,7 @@
 ## 🏗️ 設計模式實現詳情
 
 ### 1. 策略模式 (Strategy Pattern)
-**檔案**: attack_strategy.py (165 行)
+**檔案**: tower_defence/combat/attack_strategy.py (165 行)
 
 **基類**: `AttackStrategy`
 - `attack(tower, enemies)` - 執行攻擊
@@ -99,14 +99,14 @@ StrongestEnemyStrategy    → 攻擊最強的敵人
 FarthestEnemyStrategy     → 攻擊最先進的敵人
 ```
 
-**集成點**: `tower.py` 第 61-66 行
+**集成點**: `tower_defence/towers/tower.py`
 ```python
 self.attack_strategy: AttackStrategy = ClosestEnemyStrategy()
 self.set_attack_strategy(strategy)
 ```
 
 ### 2. 狀態模式 (State Pattern)
-**檔案**: tower_state.py (147 行)
+**檔案**: tower_defence/towers/tower_state.py (147 行)
 
 **基類**: `TowerState`
 - `enter(tower)` - 進入狀態
@@ -123,14 +123,14 @@ CooldownState     → 冷卻中
 StateEnum         → 狀態枚舉
 ```
 
-**集成點**: `tower.py` 第 67-68 行
+**集成點**: `tower_defence/towers/tower.py`
 ```python
 self.state: TowerState = IdleState()
 self.state.enter(self)
 ```
 
 ### 3. 觀察者模式 (Observer Pattern)
-**檔案**: event_system.py (232 行)
+**檔案**: tower_defence/systems/event_system.py (232 行)
 
 **核心類**: `EventManager` (單例模式)
 - `subscribe(event, observer)` - 訂閱事件
@@ -155,12 +155,12 @@ UIEventObserver     → 更新UI
 ```
 
 **集成點**: 
-- `tower.py` 第 72-76 行
-- `enemy.py` 第 24-30 行
-- `game.py` 全面集成
+- `tower_defence/towers/tower.py`
+- `tower_defence/entities/enemy.py`
+- `tower_defence/app/game.py` 全面集成
 
 ### 4. 建造者模式 (Builder Pattern)
-**檔案**: tower_builder.py (263 行)
+**檔案**: tower_defence/towers/tower_builder.py (263 行)
 
 **構造器類** (3個):
 
@@ -204,7 +204,7 @@ upgrade = TowerUpgradeBuilder(tower)
 upgrade.upgrade_levels(2).add_damage_bonus(20).apply()
 ```
 
-**集成點**: `game.py` 第 136-150 行
+**集成點**: `tower_defence/app/game.py`
 
 ## 📈 代碼改進指標
 

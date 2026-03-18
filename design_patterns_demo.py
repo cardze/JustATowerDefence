@@ -8,11 +8,11 @@ This module demonstrates how to use the refactored game with design patterns:
 4. Builder Pattern - Tower construction
 """
 
-from tower import Tower
-from game import Game
-from event_system import EventManager, GameEvent, GameEventObserver
-from tower_builder import TowerBuilder, TowerConfiguration
-from attack_strategy import (
+from tower_defence.towers.tower import Tower
+from tower_defence.app.game import Game
+from tower_defence.systems.event_system import EventManager, GameEvent, GameEventObserver
+from tower_defence.towers.tower_builder import TowerBuilder, TowerConfiguration
+from tower_defence.combat.attack_strategy import (
     ClosestEnemyStrategy, FastestEnemyStrategy,
     StrongestEnemyStrategy, FarthestEnemyStrategy
 )
@@ -68,7 +68,7 @@ def demo_state_pattern():
     print(f"State after upgrade: {tower.state.get_state_name()}")
     
     # Set to attacking state
-    from tower_state import AttackingState
+    from tower_defence.towers.tower_state import AttackingState
     print("\nChanging to attacking state...")
     tower.set_state(AttackingState())
     print(f"Current State: {tower.state.get_state_name()}")

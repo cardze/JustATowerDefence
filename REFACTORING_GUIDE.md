@@ -12,7 +12,7 @@
 
 不同的塔使用不同的攻击策略来选择目标。
 
-**文件**: `attack_strategy.py`
+**文件**: `tower_defence/combat/attack_strategy.py`
 
 **实现的策略**:
 - `ClosestEnemyStrategy` - 攻击最接近的敌人
@@ -30,7 +30,7 @@ tower.set_attack_strategy(StrongestEnemyStrategy())
 
 塔可以处于不同的状态，每个状态有不同的行为。
 
-**文件**: `tower_state.py`
+**文件**: `tower_defence/towers/tower_state.py`
 
 **实现的状态**:
 - `IdleState` - 闲置状态（搜索目标）
@@ -48,7 +48,7 @@ tower.upgrade()  # 自动转换到 UpgradedState
 
 实现事件驱动架构，游戏组件可以对重要事件做出反应。
 
-**文件**: `event_system.py`
+**文件**: `tower_defence/systems/event_system.py`
 
 **支持的事件**:
 - `ENEMY_SPAWNED` - 敌人生成
@@ -65,7 +65,7 @@ tower.upgrade()  # 自动转换到 UpgradedState
 
 **使用示例**:
 ```python
-from event_system import EventManager, GameEvent
+from tower_defence.systems.event_system import EventManager, GameEvent
 
 event_manager = EventManager()
 
@@ -80,7 +80,7 @@ event_manager.emit(GameEvent.MONEY_CHANGED, {'money': 500})
 
 灵活地构造复杂的塔配置，特别适用于升级系统。
 
-**文件**: `tower_builder.py`
+**文件**: `tower_defence/towers/tower_builder.py`
 
 **类**:
 - `TowerBuilder` - 使用流式API构造塔
@@ -89,7 +89,7 @@ event_manager.emit(GameEvent.MONEY_CHANGED, {'money': 500})
 
 **使用示例**:
 ```python
-from tower_builder import TowerBuilder, TowerConfiguration
+from tower_defence.towers.tower_builder import TowerBuilder, TowerConfiguration
 
 # 使用流式API
 tower = (TowerBuilder('sniper')
@@ -107,20 +107,20 @@ cannon = TowerConfiguration.cannon_tower(200, 200)
 ```
 JustATowerDefence/
 ├── 设计模式文件/
-│   ├── attack_strategy.py      # 策略模式 - 攻击策略
-│   ├── tower_state.py          # 状态模式 - 塔状态
-│   ├── event_system.py         # 观察者模式 - 事件系统
-│   └── tower_builder.py        # 建造者模式 - 塔构造器
+│   ├── tower_defence/combat/attack_strategy.py   # 策略模式 - 攻击策略
+│   ├── tower_defence/towers/tower_state.py       # 状态模式 - 塔状态
+│   ├── tower_defence/systems/event_system.py     # 观察者模式 - 事件系统
+│   └── tower_defence/towers/tower_builder.py     # 建造者模式 - 塔构造器
 │
 ├── 重构的核心文件/
-│   ├── tower.py                # 整合策略和状态模式
-│   ├── enemy.py                # 整合观察者模式
-│   └── game.py                 # 整合所有模式
+│   ├── tower_defence/towers/tower.py        # 整合策略和状态模式
+│   ├── tower_defence/entities/enemy.py      # 整合观察者模式
+│   └── tower_defence/app/game.py            # 整合所有模式
 │
 ├── 原有文件/
 │   ├── main.py                 # 游戏主入口
-│   ├── projectile.py           # 炮弹
-│   ├── config.py               # 配置
+│   ├── tower_defence/entities/projectile.py # 炮弹
+│   ├── tower_defence/core/config.py         # 配置
 │   └── test_game.py            # 测试
 │
 ├── 文档/
@@ -195,9 +195,9 @@ python3 -c "from design_patterns_demo import run_all_demos; run_all_demos()"
 ### 示例 1: 创建具有特定策略的塔
 
 ```python
-from game import Game
-from attack_strategy import StrongestEnemyStrategy
-from tower import Tower
+from tower_defence.app.game import Game
+from tower_defence.combat.attack_strategy import StrongestEnemyStrategy
+from tower_defence.towers.tower import Tower
 
 game = Game()
 
@@ -214,7 +214,7 @@ game.towers.append(tower)
 ### 示例 2: 使用事件系统
 
 ```python
-from event_system import EventManager, GameEvent, GameEventObserver
+from tower_defence.systems.event_system import EventManager, GameEvent, GameEventObserver
 
 # 创建事件管理器
 events = EventManager()
@@ -236,7 +236,7 @@ events.emit(GameEvent.TOWER_PLACED, {
 ### 示例 3: 使用构造器创建塔
 
 ```python
-from tower_builder import TowerBuilder, TowerConfiguration
+from tower_defence.towers.tower_builder import TowerBuilder, TowerConfiguration
 
 # 使用流式API
 tower1 = (TowerBuilder('basic')
@@ -261,8 +261,8 @@ tower3 = (TowerBuilder('cannon')
 ### 示例 4: 改变塔的状态
 
 ```python
-from tower import Tower
-from tower_state import AttackingState, CooldownState
+from tower_defence.towers.tower import Tower
+from tower_defence.towers.tower_state import AttackingState, CooldownState
 
 tower = Tower(100, 100, 'basic')
 

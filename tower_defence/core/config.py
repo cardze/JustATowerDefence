@@ -31,6 +31,9 @@ SPEED_INCREASE_PER_KILL = 0.05  # 5% speed increase per kill (0.1x per 2 kills),
 MAX_SPEED_MULTIPLIER = 3.0  # Maximum 3x speed
 BASE_GAME_SPEED = 1.0
 
+# Enemy reward settings
+ENEMY_REWARD_REDUCTION_FACTOR = 0.75  # Enemies give 25% less money (75% of original)
+
 # Tower types and costs
 TOWER_TYPES = {
     'basic': {
@@ -77,6 +80,17 @@ TOWER_TYPES = {
         'aoe_radius': 40,  # Area of effect damage
         'upgrade_cost': 60,
         'max_level': 3
+    },
+    'dog': {
+        'name': 'Dog Tower',
+        'cost': 75,
+        'sell_value': 40,
+        'damage': 0,
+        'range': 0,
+        'fire_rate': 0,
+        'color': CYAN,
+        'upgrade_cost': 0,
+        'max_level': 1
     }
 }
 
@@ -131,7 +145,7 @@ ENEMY_TYPES = {
 # Legacy enemy settings for backward compatibility
 ENEMY_SPEED = 2
 ENEMY_HEALTH = 100
-ENEMY_REWARD = 10
+ENEMY_REWARD = 20
 
 # Wave settings
 INITIAL_ENEMIES_PER_WAVE = 5
